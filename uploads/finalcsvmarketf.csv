@@ -1,0 +1,154 @@
+id,market,journal_date,discount_start_date,discount_end_date,product_name,brand,category,previous_price,current_price,discount_percent,unit
+1,TAMSTORE,2026-01-07/2026-01-20,,,Sevimli Dad Kərə yağı,Sevimli Dad,Kərə yağı,19,14.48,,82.5% / kq
+2,TAMSTORE,2026-01-07/2026-01-20,,,Mərçan Toyuq filesi açıq,Mərçan,Toyuq,9,7.99,,kq
+3,TAMSTORE,2026-01-07/2026-01-20,,,Champion Çay,Champion,Çay,7.59,6.18,,250 q
+4,TAMSTORE,2026-01-07/2026-01-20,,,Möcüzə Günəbaxan yağı,Möcüzə,Günəbaxan yağı,10,8.64,,2 l
+5,TAMSTORE,2026-01-07/2026-01-20,,,Selpak Toilet kağızı çeşidləri,Selpak,Toilet kağızı,44,15.98,,3 qat 32 rulon
+6,TAMSTORE,2026-01-07/2026-01-20,,,Ariel Yuyucu toz çeşidləri,Ariel,Yuyucu toz,24,9.98,,3 kq
+7,TAMSTORE,2026-01-07/2026-01-20,,,Oven Light tort,Oven,Tort,10.5,8.94,,N1
+8,TAMSTORE,2026-01-07/2026-01-20,,,Oven Qrilly tort,Oven,Tort,17,14.45,,N2
+9,TAMSTORE,2026-01-07/2026-01-20,,,Oven Ballı tort,Oven,Tort,9.9,8.4,,N3
+10,TAMSTORE,2026-01-07/2026-01-20,,,Güngöroğlu Şəkərli qoğal,Güngöroğlu,,15.5,13.95,,5 ədəd
+11,TAMSTORE,2026-01-07/2026-01-20,,,Oven Ot-qələm şirni peçenye,Oven,Peçenye,9.9,8.38,,250 q
+12,TAMSTORE,2026-01-07/2026-01-20,,,Oven Kande biskvit,Oven,Biskvit,6.9,5.88,,400 q
+13,TAMSTORE,2026-01-07/2026-01-20,,,Azdad Kurabiya sadə,Azdad,Kurabiya,2.99,2.25,,300 q
+14,TAMSTORE,2026-01-07/2026-01-20,,,Beyaz Sarı qənnadiyyat,Beyaz,,7,6.3,,kq
+15,TAMSTORE,2026-01-07/2026-01-20,,,Oven Xaçapuri pendirli,Oven,,1.3,1.1,,ədəd
+16,TAMSTORE,2026-01-07/2026-01-20,,,Oven Qoğal şor,Oven,,0.79,0.69,,ədəd
+17,TAMSTORE,2026-01-07/2026-01-20,,,Oven Bulka kəsmik,Oven,,0.59,0.5,,ədəd
+18,TAMSTORE,2026-01-07/2026-01-20,,,Oven Üçlüqa kəsmik peçenye,Oven,Peçenye,10.3,9.28,,ədəd
+19,TAMSTORE,2026-01-07/2026-01-20,,,Azdad Unsa pryanik sadə,Azdad,,1.5,1.15,,400 q
+20,TAMSTORE,2026-01-07/2026-01-20,,,Ələməyı Kənddə lavaş,Ələməyı,Lavaş,1.8,1.6,,8 ədəd
+21,TAMSTORE,2026-01-07/2026-01-20,,,N1 Extra baton,N1,,1,0.85,,400 q
+22,TAMSTORE,2026-01-07/2026-01-20,,,Oven Has kənd çörəyi,Oven,Çörək,1,0.85,,290 q
+23,TAMSTORE,2026-01-07/2026-01-20,2026-01-07,2026-01-13,Dana əti döş sümüklü,,Dana əti,16.98,15.98,,kq
+24,TAMSTORE,2026-01-07/2026-01-20,2026-01-14,2026-01-20,Dana əti antirkot,,Dana əti,17.48,16.48,,kq
+25,TAMSTORE,2026-01-07/2026-01-20,2026-01-07,2026-01-13,Dana əti sümüksüz,,Dana əti,21.48,19.98,,kq
+26,TAMSTORE,2026-01-07/2026-01-20,2026-01-14,2026-01-20,Dana əti soyutmalıq,,Dana əti,19.98,18.98,,kq
+27,TAMSTORE,2026-01-07/2026-01-20,2026-01-07,2026-01-13,Dana əti bel sümüklü,,Dana əti,17.98,16.98,,kq
+28,TAMSTORE,2026-01-07/2026-01-20,2026-01-14,2026-01-20,Dana əti quşbaşı,,Dana əti,19.98,18.98,,kq
+29,OBA,2026-01-08/2026-01-21,,,İzqara sosis,Sədəf,sosis,12.99,6.99,46,kq
+30,OBA,2026-01-08/2026-01-21,,,Qarğıdalı yağı,Mocuzə,yağ,6.95,5.65,19,1 l
+31,OBA,2026-01-08/2026-01-21,,,Earl grey çay,Beta,çay,7.7,6.44,16,250 q
+32,OBA,2026-01-08/2026-01-21,,,Kərə yağı,Shine,kərə yağı,19.99,14.99,25,1 kq
+33,OBA,2026-01-08/2026-01-21,,,Yuyucu toz çeşidləri,Ariel,yuyucu toz,39.39,17.99,54,5 kq
+34,OBA,2026-01-08/2026-01-21,,,Tavada sosis,Tamdad,sosis,13.99,7.99,42,kq
+35,OBA,2026-01-08/2026-01-21,,,Kartof fri,,kartof fri,13.79,8.49,38,2.5 kq
+36,OBA,2026-01-08/2026-01-21,,,Hindquş kolbasası,Tamdad,kolbasa,6.49,4.49,30,500 q
+37,OBA,2026-01-08/2026-01-21,,,Servelat kolbasa,Sədəf,kolbasa,15.89,12.99,18,kq
+38,OBA,2026-01-08/2026-01-21,,,Favorit pendir çeşidləri,Hər Gün,pendir,3.29,2.85,13,250 q
+39,OBA,2026-01-08/2026-01-21,,,Holland pendiri,Milkmom,pendir,14.99,12.79,15,kq
+40,OBA,2026-01-08/2026-01-21,,,Kərə yağı,Hər Gün,kərə yağı,4.59,3.49,24,180 q
+41,OBA,2026-01-08/2026-01-21,,,Kərə yağı,Hər Gün,kərə yağı,9.99,7.49,25,500 q
+42,OBA,2026-01-08/2026-01-21,,,Kərə yağı,Vanaq,kərə yağı,18.99,13.99,26,1 kq
+43,OBA,2026-01-08/2026-01-21,,,Spred yağ,Derevenskiye Motivi,spred yağ,1.79,1.09,39,180 q
+44,OBA,2026-01-08/2026-01-21,,,Spred yağ,Maslyona,spred yağ,3.69,3.09,16,500 q
+45,OBA,2026-01-08/2026-01-21,,,Spred yağ,Maslyona,spred yağ,32.95,27.45,17,5 kq
+46,OBA,2026-01-08/2026-01-21,,,Spred yağ,Krestyanskoye Razdolye,spred yağ,7.79,5.39,30,1 kq
+47,OBA,2026-01-08/2026-01-21,,,Şor,Malocnik,şor,2.99,2.09,30,400 q
+48,OBA,2026-01-08/2026-01-21,,,Şor,Hər Gün,şor,1.99,1.78,11,350 q
+49,OBA,2026-01-08/2026-01-21,,,Şor,RB,şor,2.9,2.05,29,400 q
+50,OBA,2026-01-08/2026-01-21,,,Şor,Milkmom,şor,2.99,2.09,30,400 q
+51,OBA,2026-01-08/2026-01-21,,,Ayran çeşidləri,Milla,ayran,0.99,0.89,10,300 ml
+52,OBA,2026-01-08/2026-01-21,,,Qatiq,Milla,qatiq,0.89,0.75,16,200 q
+53,OBA,2026-01-08/2026-01-21,,,Qatiq,Milla,qatiq,2.4,2.15,10,450 q
+54,OBA,2026-01-08/2026-01-21,,,Orexovaya strana şokoladlı konfet,Nevskiy,konfet,10.99,7.99,27,kq
+55,OBA,2026-01-08/2026-01-21,,,Slivocnaya mu vafli,Nevskiy,vafli,10.99,7.69,30,kq
+56,OBA,2026-01-08/2026-01-21,,,25 kadr,Nevskiy,,10.99,6.99,36,kq
+57,OBA,2026-01-08/2026-01-21,,,Kovboy Djonni,Nevskiy,,11.99,8.99,25,kq
+58,OBA,2026-01-08/2026-01-21,,,Parkur 2 nuqatlı fındıqlı şokolad,Nevskiy,şokolad,8.99,6.99,22,kq
+59,OBA,2026-01-08/2026-01-21,,,Batoncik konfet,Nevskiy,konfet,8.99,6.99,22,kq
+60,OBA,2026-01-08/2026-01-21,,,Mir jele şokoladlı konfet,Nevskiy,konfet,7.99,6.49,19,kq
+61,OBA,2026-01-08/2026-01-21,,,Zolotaya liliya şokoladlı konfet,Konti,konfet,13.3,10.99,17,kq
+62,OBA,2026-01-08/2026-01-21,,,Smex yerfındıqlı şokoladlı konfet,Maredo,konfet,10.19,7.99,22,kq
+63,OBA,2026-01-08/2026-01-21,,,Cocoland şokoladlı konfet,Maredo,konfet,9.99,7.99,20,kq
+64,OBA,2026-01-08/2026-01-21,,,Snep şokoladlı konfet,Maredo,konfet,8.99,6.99,22,kq
+65,OBA,2026-01-08/2026-01-21,,,Tesoro şokoladlı konfet,Maredo,konfet,8.99,6.99,22,kq
+66,OBA,2026-01-08/2026-01-21,,,Racki,Roshen,,8.79,7.49,15,kq
+67,OBA,2026-01-08/2026-01-21,,,Sabun,Diana,sabun,2.59,1.99,23,
+68,OBA,2026-01-08/2026-01-21,,,Sabun,Arko,sabun,1.39,0.89,36,90 q
+69,OBA,2026-01-08/2026-01-21,,,Təsərrüfat sabunu,Trendy,sabun,0.55,0.45,18,170 q
+70,OBA,2026-01-08/2026-01-21,,,Şampun çeşidləri,Eldor,şampun,7.99,5.49,31,400 ml
+71,OBA,2026-01-08/2026-01-21,,,Təsərrüfat sabunu,Sədəf,sabun,0.85,0.59,30,185 q
+72,OBA,2026-01-08/2026-01-21,,,Maye sabun,Marry Moore,maye sabun,1.99,1.79,10,500 ml
+73,OBA,2026-01-08/2026-01-21,,,Qulaq çubuğu,Cotfab,qulaq çubuğu,2.49,1.99,20,300 ədədli
+74,OBA,2026-01-08/2026-01-21,,,Asseptin aloe vera krem,Cire,krem,1.49,0.99,33,30 ml
+75,OBA,2026-01-08/2026-01-21,,,Blue2 plus ülgüc,Gillette,ülgüc,2.79,1.69,39,2 ədədli
+76,OBA,2026-01-08/2026-01-21,,,Saç boyası çeşidləri,Garnier,saç boyası,6.85,4.49,34,
+77,OBA,2026-01-08/2026-01-21,,,Pişik yemi çeşidləri,Darling,pişik yemi,0.69,0.59,14,75 q
+78,OBA,2026-01-08/2026-01-21,,,Quru pişik yemi,Darling,pişik yemi,7.2,5.99,17,760 q
+79,Araz,2026-01-15/2026-01-28,,,Nescafe Gold,Nescafe,Qəhvə,22.5,12.99,42,190 q
+80,Araz,2026-01-15/2026-01-28,,,Berqa Earl Grey,Berqa,Qara çay,6.85,5.59,18,225 q
+81,Araz,2026-01-15/2026-01-28,,,Eti Tutku,Eti,Şokoladlı peçenye,2.48,1.95,21,180 q
+82,Araz,2026-01-15/2026-01-28,,,Yaşkino Cio Rio,Yaşkino,Şokolad,11.6,9.49,18,kq
+83,Araz,2026-01-15/2026-01-28,,,Mastero,Mastero,Basmati düyü,4.4,3.49,20,1 kq
+84,Araz,2026-01-15/2026-01-28,,,Sultan,Sultan,Basmati düyü,10.15,8.65,14,1.9 kq
+85,Araz,2026-01-15/2026-01-28,,,Bismak,Bismak,Un,2.98,1.99,33,2 kq
+86,Araz,2026-01-15/2026-01-28,,,Ankara,Ankara,Basmati düyü,5.6,3.99,28,850 q
+87,Araz,2026-01-15/2026-01-28,,,Qudvill,,Un,3.5,2.69,23,2 kq
+88,Araz,2026-01-15/2026-01-28,,,Qarabaşaq,,,1.5,1.29,14,1 kq
+89,Araz,2026-01-15/2026-01-28,,,Mastero,Mastero,Makaron,1.9,1.55,18,500 q
+90,Araz,2026-01-15/2026-01-28,,,Passim,Passim,Manna,2.1,1.69,19,1800 q
+91,Araz,2026-01-15/2026-01-28,,,Besta,Besta,Uzun düyü,10,7.99,20,1800 q
+92,Araz,2026-01-15/2026-01-28,,,Taç,Taç,Makaron,1,0.75,25,500 q
+93,Araz,2026-01-15/2026-01-28,,,Gourmetina,,Taxta qaşıq,1.95,1.49,23,
+94,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Portağal,,,,,15,kq
+95,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Alma,,Pink Lady,,,15,kq
+96,Araz,2026-01-15/2026-01-28,2026-01-19,2026-01-21,Alma,,Göy,,,15,kq
+97,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Kök,,,,,15,kq
+98,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Kələm,,,,,15,kq
+99,Araz,2026-01-15/2026-01-28,2026-01-19,2026-01-21,Armud,,Konfrans yeni,,,15,kq
+100,Araz,2026-01-15/2026-01-28,2026-01-19,2026-01-21,Kartof,,Setka,,,15,kq
+101,Araz,2026-01-15/2026-01-28,2026-01-19,2026-01-21,Soğan,,Setka,,,15,kq
+102,Araz,2026-01-15/2026-01-28,,,Forel balığı,,Təzə ovulmuş,16.9,15.49,,kq
+103,Araz,2026-01-15/2026-01-28,,,Bando,Bando,Türk Somon dilimləri (dondurulmuş),34.9,25.99,,kq
+104,Araz,2026-01-15/2026-01-28,,,Forel balığı,,Təzə ovulmuş,14.4,13.29,,kq (300-500 q)
+105,Araz,2026-01-15/2026-01-28,,,Santa Bremor,Santa Bremor,Siyənək filesi,4.49,3.99,,240 q (yağda)
+106,Araz,2026-01-15/2026-01-28,,,Santa Bremor,Santa Bremor,Qızıl balıq kürüsü,3.99,3.59,,230 q
+107,Araz,2026-01-15/2026-01-28,,,Russkoe More,Russkoe More,Siyənək balığı,4.79,4.29,,200 q (yağda)
+108,Araz,2026-01-15/2026-01-28,,,Bereq,Bereq,Dəniz məhsulu kokteyl,6.99,5.19,,200 q
+109,Araz,2026-01-15/2026-01-28,,,Bereq,Bereq,Siyənək filesi,8.79,7.19,,400 q (yağda)
+110,Araz,2026-01-15/2026-01-28,,,Ribnaya Set,Ribnaya Set,Skumbriya balığı,7.99,5.29,,250 q (hissə verilmiş)
+111,Araz,2026-01-15/2026-01-28,,,Atlantika,Atlantika,Qızıl balıq çubuqları,3.99,2.79,,60 q
+112,Araz,2026-01-15/2026-01-28,,,Balık Dünyası,Balık Dünyası,Tək Somon şesi (dondurulmuş),15.89,12.99,,500 q
+113,Araz,2026-01-15/2026-01-28,,,Santa Bremor,Santa Bremor,Keta qızıl balıq,2.99,2.49,,dondurulmuş
+114,Araz,2026-01-15/2026-01-28,,,Alfoor,Alfoor,File (dondurulmuş),9.95,6.99,29,kq
+115,Araz,2026-01-15/2026-01-28,,,Payim,Payim,Təzə toyuq ayaq (paketdə),6.75,5.59,,kq
+116,Araz,2026-01-15/2026-01-28,,,Marcan,Marcan,Təzə bud (buxka),6.95,5.49,,kq
+117,Araz,2026-01-15/2026-01-28,,,Marcan,Marcan,Təzə file,9.75,7.99,,kq
+118,Araz,2026-01-15/2026-01-28,,,Marcan,Marcan,Təzə bud üstü,7.05,5.99,,kq
+119,Araz,2026-01-15/2026-01-28,,,Payim,Payim,Təzə file,9.75,7.89,,kq
+120,Araz,2026-01-15/2026-01-28,,,Marcan,Marcan,Təzə qanad,7.15,5.99,,kq
+121,Araz,2026-01-15/2026-01-28,,,Marcan,Marcan,Təzə bud bütöv,6.3,4.89,,kq
+122,Araz,2026-01-15/2026-01-28,,,Payim,Payim,Təzə bud bütöv,5.95,4.59,,kq
+123,Araz,2026-01-15/2026-01-28,2026-01-23,2026-01-28,Taç,Taç,Təzə file açıq,9.75,7.89,,kq
+124,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə ciyər açıq,4.8,3.69,,kq
+125,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə bud bütöv açıq,6.95,5.69,,kq
+126,Araz,2026-01-15/2026-01-28,2026-01-23,2026-01-28,Taç,Taç,Təzə bütöv açıq,6.95,5.69,,kq
+127,Araz,2026-01-15/2026-01-28,2026-01-23,2026-01-28,Taç,Taç,Təzə qanad açıq,6.95,5.69,,kq
+128,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə qanad açıq,6.95,5.69,,kq
+129,Araz,2026-01-15/2026-01-28,,,Dana əti,,Ciyər,15.99,11.99,,kq
+130,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Dana əti,,Sümüksüz,21.99,20.99,,kq
+131,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-18,Dana əti,,Döş (sümüksüz),16.99,15.99,,kq
+132,Araz,2026-01-15/2026-01-28,2026-01-22,2026-01-25,Quzu əti,,,20.99,19.99,,kq
+133,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə toyuq ayaq açıq,6.7,4.99,,kq
+134,Araz,2026-01-15/2026-01-28,2026-01-23,2026-01-28,Taç,Taç,Təzə bud üstü açıq,6.95,5.79,,kq
+135,Araz,2026-01-15/2026-01-28,,,Tamlı,Tamlı,Təzə bud əti,6.9,5.59,,kq
+136,Araz,2026-01-15/2026-01-28,,,Tamlı,Tamlı,Təzə file,9.45,7.89,,kq
+137,Araz,2026-01-15/2026-01-28,2026-01-23,2026-01-28,Taç,Taç,Təzə bud açıq,6.75,4.99,,kq
+138,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə bud açıq,6.95,5.79,,kq
+139,Araz,2026-01-15/2026-01-28,2026-01-15,2026-01-22,Şirvan,Şirvan,Təzə file açıq,9.65,7.89,,kq
+140,Araz,2026-01-15/2026-01-28,,,Tamlı,Tamlı,Təzə toyuq (paketdə),6.7,5.49,,
+141,Araz,2026-01-15/2026-01-28,,,Simurq,Simurq,"Bud (dondurulmuş, qabda)",6.99,6.19,,
+142,Araz,2026-01-15/2026-01-28,,,Simurq,Simurq,"Bud dili (dondurulmuş, qabda)",7.75,6.59,,
+143,Bravo,2026-01-08/2026-01-21,,,PERSIL paltar yuyucu gel çeşidləri,PERSIL,paltar yuyucu gel,49.97,19.99,60,1 l / 1 ədəd
+144,Bravo,2026-01-08/2026-01-21,,,BINGO Yuyucu gel çeşidləri,BINGO,yuyucu gel,15.37,9.99,35,3 l / 1 ədəd
+145,Bravo,2026-01-08/2026-01-21,,,FAIRY Qabyuyan maye çeşidləri,FAIRY,qabyuyan maye,11.52,7.49,35,1500 ml / 1 ədəd
+146,Bravo,2026-01-08/2026-01-21,,,AURA Mətbəx kağızı,AURA,mətbəx kağızı,17.32,10.39,40,3 qat / 2 rulon / 1 bağlama
+147,Bravo,2026-01-08/2026-01-21,,,BINGO Yuyucu toz,BINGO,yuyucu toz,24.31,17.99,26,9 kq
+148,Bravo,2026-01-08/2026-01-21,,,FAIRY Platinum Qabyuyan maşın üçün kapsul,FAIRY,qabyuyan maşın üçün kapsul,46.82,36.99,21,96 ədədli / 1 bağlama
+149,Bravo,2026-01-08/2026-01-21,,,VERNISAJ Maye sabun çeşidləri,VERNISAJ,maye sabun,4.58,3.39,26,1 l / 1 ədəd
+150,Bravo,2026-01-08/2026-01-21,,,SLEEPY Təmizləyici nəm salfet çeşidləri,SLEEPY,nəm salfet,9.78,4.99,49,100 ədədli / 1 bağlama
+151,Bravo,2026-01-08/2026-01-21,,,BASSO Qarğıdalı yağı,BASSO,qarğıdalı yağı,18.83,12.99,31,2 l
+152,Bravo,2026-01-08/2026-01-21,,,SHAAN Gold Yuyucu toz,SHAAN Gold,yuyucu toz,21.94,17.99,18,5 kq
+153,Bravo,2026-01-08/2026-01-21,,,ARIEL Yuyucu toz,ARIEL,yuyucu toz,59.16,28.99,51,9 kq

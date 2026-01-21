@@ -1,0 +1,15 @@
+{
+  "name": "daily-deals-backend-node",
+  "version": "1.0.0",
+  "description": "Node.js backend for Daily Deals app reading from CSV",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "express": "^4.18.2",
+    "multer": "^2.0.2"
+  }
+}
