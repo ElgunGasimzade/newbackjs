@@ -120,13 +120,16 @@ class DealService {
         const allProducts = await this.getAllProducts(); // Already filtered
         if (!queries || queries.length === 0) return [];
 
-        const searchTerms = queries.map(q => q.toLowerCase().trim());
+        // Helper to normalize text (remove accents/diacritics)
+        const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchTerms = queries.map(q => normalize(q));
 
         return allProducts.filter(p => {
-            const pName = (p.productName || "").toLowerCase();
-            const bName = (p.brandName || "").toLowerCase();
-            const desc = (p.description || "").toLowerCase();
-            const store = (p.store || "").toLowerCase();
+            const pName = normalize(p.productName);
+            const bName = normalize(p.brandName);
+            const desc = normalize(p.description);
+            const store = normalize(p.store);
 
             return searchTerms.some(term => {
                 // Use word boundary matching to avoid false matches
