@@ -8,123 +8,150 @@ class PlanningController {
 
     async optimizePlan(req, res) {
         try {
+            console.log("[Planning] Optimizing Route...");
+            // Use filtered list that excludes Unknown/Generic
             const allProducts = await DealService.getAllProducts();
 
-            // 1. Determine Input Items
+            const inputItemIds = req.body.ids || [];
             let inputItemNames = req.body.items || [];
-            let inputItemIds = req.body.ids || []; // Support for ID-based lookup
 
-            let derivedItems = [];
+            // Normalize helper
+            const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+            // Build structured Shopping List
+            let shoppingList = [];
 
             if (inputItemIds.length > 0) {
-                // Enhanced Flow: Use IDs
                 console.log(`[Planning] Optimizing for ${inputItemIds.length} IDs.`);
-                // Map IDs to product names/descriptions to "feed" the logic
-                // In a real app, we'd pass the actual objects deep into the logic, 
-                // but for this refactor I'll map them to "Terms" that the existing logic understands,
-                // OR I'll modify the logic to prioritize these specific items.
-
-                // Let's resolve the objects first
+                // Resolve specific items first
                 const resolvedProducts = allProducts.filter(p => inputItemIds.includes(p.id));
 
-                // Use their descriptions/names as the "Needed Terms" 
-                // We normalize here to ensure the fuzzy matcher finds them (and potential alternatives if that exact ID isn't at a specific store)
-                // Wait, if I have a specific ID, I want THAT exact item.
-                // But the "Optimization" logic calculates "Basket Price at Store X". 
-                // If Item A (ID: 123) is only at Store 1, what do we do for Store 2?
-                // Answer: We need the "Equivalent" item at Store 2.
-                // So we must derive the "Category" or "Generic Name" from the specific ID.
-
-                derivedItems = resolvedProducts.map(p => {
-                    // Prefer Description if it's generic-ish, otherwise use Category (Product Name)
-                    // If user selected "Sevimli Dad Kərə yağı", we want "Kərə yağı" when looking at other stores.
-                    return p.brandName === "Generic" ? (p.description || p.productName) : p.productName;
-                });
-
-                console.log(`[Planning] Derived terms from IDs: ${derivedItems.join(', ')}`);
-                inputItemNames = derivedItems;
-            }
-
-            if (inputItemNames.length === 0) {
-                // Try to grab from scan controller's shared memory
-                const scanItems = ScanController.getLastScanItems();
-                if (scanItems && scanItems.length > 0) {
-                    inputItemNames = scanItems.map(i => i.name);
-                    console.log(`[Planning] Using ${inputItemNames.length} items from last scan.`);
-                } else {
-                    // Fallback for demo if no scan
-                    inputItemNames = ["Yogurt", "Milk", "Eggs"];
+                shoppingList = resolvedProducts.map(p => ({
+                    id: p.id, // Preferred, exact ID
+                    term: normalize(p.brandName === "Generic" ? (p.description || p.productName) : p.productName), // Fallback search term
+                    originalName: p.description || p.productName
+                }));
+            } else {
+                // Fallback / Names only flow
+                if (inputItemNames.length === 0) {
+                    const scanItems = ScanController.getLastScanItems();
+                    if (scanItems && scanItems.length > 0) {
+                        inputItemNames = scanItems.map(i => i.name);
+                    } else {
+                        inputItemNames = ["Yogurt", "Milk", "Eggs"];
+                    }
                 }
+                shoppingList = inputItemNames.map(name => ({
+                    id: null,
+                    term: normalize(name),
+                    originalName: name
+                }));
             }
 
-            // Normalize needed items for checking
-            const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            const neededItems = inputItemNames.map(n => normalize(n));
+            console.log(`[Planning] Final Shopping List: ${shoppingList.map(i => i.term).join(', ')}`);
 
-            console.log(`[Planning] Optimizing for items: ${neededItems.join(', ')}`);
+            // --- OPTION A: MAX SAVINGS (Global Best Deals) ---
+            const maxSavingsStops = {};
+            let maxSavingsTotalSavings = 0;
 
-            // Helper: Find matches for a required item name in all products
-            // Using fuzzy logic similar to DealService
-            const findMatchesForTerm = (term) => {
-                const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            shoppingList.forEach(reqItem => {
+                // Find global matches
+                // 1. If ID exists, find it directly? 
+                //    actually max savings means "Best Deal for this ITEM Type".
+                //    But if user selected a Specific Brand, they probably want THAT brand.
+
+                let matches = [];
+
+                // Strategy: Find candidates globally
+                const escapedTerm = reqItem.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
-                return allProducts.filter(p => {
-                    // Check name, category, and brand
+
+                matches = allProducts.filter(p => {
+                    // If we have a preferred ID, we could prioritize it, but Max Savings usually implies finding the best price for the *category*.
+                    // However, to respect "Brand Selection", if I picked Ariel, I shouldn't get Bingo just because it's cheaper.
+                    // So let's prioritize matches that share the same BRAND if an ID was provided.
                     const normName = normalize(p.productName || p.name);
                     const normDesc = normalize(p.description);
                     const normBrand = normalize(p.brandName);
-
                     return regex.test(normName) || regex.test(normDesc) || regex.test(normBrand);
                 });
-            };
 
-            // --- OPTION A: MAX SAVINGS (Multi-Store) ---
-            // Concept: For each item on the list, buy it at the store where it matches and is Cheapest.
+                if (reqItem.id) {
+                    // Filter matches to strict brand/category if ID was given? 
+                    // Or prioritize the exact item.
+                    // Let's find the exact item first.
+                    const exactItem = allProducts.find(p => p.id === reqItem.id);
+                    if (exactItem) {
+                        // If exact item is found, we might want to check if it's available cheaper elsewhere?
+                        // But usually grouped deals are by Store. 
+                        // The `allProducts` list contains 1 entry per product per store?
+                        // Yes, the CSV has entries for each store.
 
-            const maxSavingsStops = {}; // Store -> [Items]
-            let maxSavingsTotalSavings = 0;
+                        // Wait, if ID=1 is "Ariel at TAMSTORE", ID=2 is "Ariel at BRAVO".
+                        // If user sent ID=1, they clicked "Ariel at TAMSTORE". 
+                        // Did they mean "I want Ariel" or "I want this specific row"?
+                        // Usually Brand Selection shows "Ariel" generic card? No, looking at DealService it groups by Keyword.
+                        // The Dealmapper assigns ID to each CSV row.
 
-            neededItems.forEach(term => {
-                const matches = findMatchesForTerm(term);
+                        // If the user selected a specific Option in the Brand screen, they selected a specific Store+Price combo?
+                        // Let's check BrandSelectionResponse.
+                        // It returns Groups -> Options. Each Option has `store` and `price`.
+                        // So yes, ID implies a specific Store.
+
+                        // If user picked specific store items for ALL items, Option A is just "Go where you said".
+                        // BUT usually Brand Selection lets you pick "Ariel" (and maybe it shows the best one?).
+                        // If the UI sends the ID of the selected card, that card belongs to ONE store.
+
+                        // PROPOSAL: If ID is sent, use that EXACT item for that line.
+                        // If checking for "Max Savings", maybe look for SAME product at different stores?
+                        // Our CSV structure: `product_name` + `brand` + `category` defines the product.
+
+                        // Let's stick to: Find best price for the *Term/Category* but prioritize Brand if known.
+                        // Simpler: Just find min price match for the Term.
+                    }
+                }
+
                 if (matches.length > 0) {
-                    // Find absolute cheapest among all stores
-                    // Sort by PRICE first. Check for discount? 
-                    // Actually we want lowest price.
-                    matches.sort((a, b) => a.newPrice - b.newPrice);
-                    const bestDeal = matches[0]; // Cheapest option found
+                    // Sort by Price ASC (Prioritize Exact ID)
+                    matches.sort((a, b) => {
+                        if (reqItem.id) {
+                            if (a.id == reqItem.id) return -1;
+                            if (b.id == reqItem.id) return 1;
+                        }
+                        return a.newPrice - b.newPrice;
+                    });
+                    const bestDeal = matches[0];
 
-                    // DEBUG: Ensure we are capturing savings
-                    const savings = (bestDeal.oldPrice > bestDeal.newPrice) ? (bestDeal.oldPrice - bestDeal.newPrice) : 0;
+                    if (!maxSavingsStops[bestDeal.store]) {
+                        maxSavingsStops[bestDeal.store] = [];
+                    }
 
-                    if (!maxSavingsStops[bestDeal.store]) maxSavingsStops[bestDeal.store] = [];
+                    const savings = (bestDeal.oldPrice - bestDeal.newPrice) > 0 ? (bestDeal.oldPrice - bestDeal.newPrice) : 0;
+
                     maxSavingsStops[bestDeal.store].push({
-                        id: bestDeal.id || `ri_${Date.now()}_${Math.random()}`,
+                        id: bestDeal.id,
                         name: bestDeal.description || bestDeal.productName,
                         price: bestDeal.newPrice,
                         savings: savings,
-                        aisle: "General", // Placeholder
-                        checked: false
+                        aisle: "General",
+                        checked: false,
+                        // Mark if this was exact choice
+                        isExact: reqItem.id && bestDeal.id === reqItem.id
                     });
 
                     maxSavingsTotalSavings += savings;
-                } else {
-                    console.log(`[Planning] No matches found for term: ${term}`);
                 }
             });
 
-            // Convert Option A Map to Route Stops
-            // We need to format specific to RouteOption structure
-            // RouteStopSummary vs RouteDetails are different. 
-            // `optimizePlan` returns options with `stops: [RouteStopSummary]`
+            // Convert Option A Map
             const optionAStopSummaries = Object.keys(maxSavingsStops).map(storeName => ({
                 store: storeName,
-                summary: `${maxSavingsStops[storeName].length} items to buy`
+                summary: `${maxSavingsStops[storeName].length} item(s)`
             }));
 
-            // Save Option A Details for later retrieval
             const optionADetails = {
                 totalSavings: maxSavingsTotalSavings,
-                estTime: `${Object.keys(maxSavingsStops).length * 15} mins`, // Mock time: 15m per stop
+                estTime: `${Object.keys(maxSavingsStops).length * 15} mins`,
                 stops: Object.keys(maxSavingsStops).map((storeName, index) => ({
                     sequence: index + 1,
                     store: storeName,
@@ -136,18 +163,15 @@ class PlanningController {
             planStore.set("opt_max_savings", optionADetails);
 
 
-            // --- OPTION B: ONE STOP (Single Store) ---
-            // Concept: Calculate the "Basket Price" for the user's list at EACH store.
-            // Pick the store with the lowest Total Basket Price.
-
+            // --- OPTION B: SINGLE STORE (Best Basket) ---
             const uniqueStores = [...new Set(allProducts.map(p => p.store))];
             let bestStore = null;
             let bestStoreBasketPrice = Infinity;
             let bestStoreSavings = 0;
-            let bestStoreItems = []; // List of items to buy at best store
+            let bestStoreItems = [];
+            let bestStoreFoundCount = 0;
 
             uniqueStores.forEach(store => {
-                // For this store, try to find every needed item
                 const storeProducts = allProducts.filter(p => p.store === store);
 
                 let currentBasketPrice = 0;
@@ -155,9 +179,16 @@ class PlanningController {
                 let foundItems = [];
                 let itemsFoundCount = 0;
 
-                neededItems.forEach(term => {
-                    // Find matches AT THIS STORE using the same robust logic with word boundaries
-                    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                shoppingList.forEach(reqItem => {
+                    // 1. Try to find EXACT ID matches if preferred (e.g. if the user picked a specific item that exists at this store)
+                    // Note: IDs in our system are currently unique per ROw (Store+Product). 
+                    // So ID 1 is ONLY at Tamstore. It will never be at Bravo.
+                    // So checking for ID match at current 'store' will only work if 'store' == ID's store.
+
+                    // So for Option B (checking Store X), we need to find "Product EQUIVALENT to ID 1".
+                    // Logic: Match by normalized term.
+
+                    const escapedTerm = reqItem.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
 
                     const matches = storeProducts.filter(p => {
@@ -168,20 +199,25 @@ class PlanningController {
                     });
 
                     if (matches.length > 0) {
-                        // Pick cheapest version of "Milk" at this store
-                        matches.sort((a, b) => a.newPrice - b.newPrice);
+                        // Pick the best match at this store (Prioritize Exact ID)
+                        matches.sort((a, b) => {
+                            if (reqItem.id) {
+                                if (a.id == reqItem.id) return -1;
+                                if (b.id == reqItem.id) return 1;
+                            }
+                            return a.newPrice - b.newPrice;
+                        });
                         const match = matches[0];
 
                         currentBasketPrice += match.newPrice;
-                        if (match.oldPrice > match.newPrice) {
-                            currentSavings += (match.oldPrice - match.newPrice);
-                        }
+                        const savings = (match.oldPrice - match.newPrice) > 0 ? (match.oldPrice - match.newPrice) : 0;
+                        currentSavings += savings;
 
                         foundItems.push({
-                            id: match.id || `ri_${Date.now()}_${Math.random()}`,
+                            id: match.id,
                             name: match.description || match.productName,
                             price: match.newPrice,
-                            savings: (match.oldPrice - match.newPrice) > 0 ? (match.oldPrice - match.newPrice) : 0,
+                            savings: savings,
                             aisle: "General",
                             checked: false
                         });
@@ -189,27 +225,25 @@ class PlanningController {
                     }
                 });
 
-                // Algorithm: We prefer store with MOST items found. Then Lowest Price.
-                // Simple version: Only consider stores that have at least 1 item.
-                // Weighting: If a store has fewer items, we shouldn't pick it just because total is low (e.g. 0).
-                // Let's assume we want to maximize coverage -> Then minimize cost.
-
-                // Demo Simplification: Just pick store with Lowest Basket Price among those with > 0 items.
-                // (In reality, we'd penalize missing items).
                 if (itemsFoundCount > 0) {
-                    if (!bestStore || (itemsFoundCount > bestStoreItems.length) || (itemsFoundCount === bestStoreItems.length && currentBasketPrice < bestStoreBasketPrice)) {
+                    if (!bestStore || (itemsFoundCount > bestStoreFoundCount) || (itemsFoundCount === bestStoreFoundCount && currentBasketPrice < bestStoreBasketPrice)) {
                         bestStore = store;
                         bestStoreBasketPrice = currentBasketPrice;
                         bestStoreSavings = currentSavings;
                         bestStoreItems = foundItems;
+                        bestStoreFoundCount = itemsFoundCount;
                     }
                 }
             });
 
-            // Option B Details
+            const totalRequired = shoppingList.length;
+            const availabilityText = (bestStoreFoundCount === totalRequired)
+                ? `All ${totalRequired} items available here`
+                : `${bestStoreFoundCount} of ${totalRequired} items available here`;
+
             const optionBStopSummaries = bestStore ? [{
                 store: bestStore,
-                summary: `All ${bestStoreItems.length} items available here`
+                summary: availabilityText
             }] : [];
 
             const optionBDetails = {
@@ -225,12 +259,10 @@ class PlanningController {
             };
             planStore.set("opt_one_stop", optionBDetails);
 
-
-            // --- Response ---
             res.json({
                 options: [
                     {
-                        id: "opt_max_savings", // ID used to fetch details
+                        id: "opt_max_savings",
                         type: "MAX_SAVINGS",
                         title: "Max Savings",
                         totalSavings: parseFloat(maxSavingsTotalSavings.toFixed(2)),
@@ -249,6 +281,7 @@ class PlanningController {
                     }
                 ]
             });
+
         } catch (e) {
             console.error(e);
             res.status(500).json({ error: "Optimization failed" });
