@@ -36,9 +36,10 @@ class PlanningController {
                 // So we must derive the "Category" or "Generic Name" from the specific ID.
 
                 derivedItems = resolvedProducts.map(p => {
-                    // Prefer Description if it's generic-ish, otherwise use Category (Product Name)
-                    // If user selected "Sevimli Dad Kərə yağı", we want "Kərə yağı" when looking at other stores.
-                    return p.brandName === "Generic" ? (p.description || p.productName) : p.productName;
+                    // Use strict description to find the EXACT same product at other stores
+                    // User wants "my chosings", not generic substitutions.
+                    // So we search for "Sevimli Dad Kərə yağı" instead of just "Kərə yağı".
+                    return p.description || p.productName;
                 });
 
                 console.log(`[Planning] Derived terms from IDs: ${derivedItems.join(', ')}`);
@@ -157,16 +158,20 @@ class PlanningController {
 
             // --- OPTION B: ONE STOP (Single Store) ---
             // Concept: Calculate the "Basket Price" for the user's list at EACH store.
-            // Pick the store with the lowest Total Basket Price.
+            // Logic: We must find the user's selected items (or identicals) at other stores.
+            // Since IDs are unique per deal (Row 1 = Store A, Row 2 = Store B), we cannot look up ID at Store B.
+            // We MUST search by Description ("Sevimli Dad Kərə yağı") to find the equivalent at Store B.
 
             const uniqueStores = [...new Set(allProducts.map(p => p.store))];
             let bestStore = null;
             let bestStoreBasketPrice = Infinity;
             let bestStoreSavings = 0;
-            let bestStoreItems = []; // List of items to buy at best store
+            let bestStoreItems = [];
 
+            // Use the same search logic whether we have IDs or Names, 
+            // because neededItems was already set to [Descriptions] if IDs were present.
+            // This ensures we find the "Same Product" (by description) at other stores.
             uniqueStores.forEach(store => {
-                // For this store, try to find every needed item
                 const storeProducts = allProducts.filter(p => p.store === store);
 
                 let currentBasketPrice = 0;
@@ -175,19 +180,21 @@ class PlanningController {
                 let itemsFoundCount = 0;
 
                 neededItems.forEach(term => {
-                    // Find matches AT THIS STORE using the same robust logic with word boundaries
+                    // Find matches AT THIS STORE using exactish description match
                     const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
 
                     const matches = storeProducts.filter(p => {
                         const normName = normalize(p.productName || p.name);
                         const normDesc = normalize(p.description);
-                        const normBrand = normalize(p.brandName);
-                        return regex.test(normName) || regex.test(normDesc) || regex.test(normBrand);
+                        // If strict mode (ids present), term is Description.
+                        // If legacy mode, term is Name. 
+                        // Checking both matches covers both cases safely.
+                        return regex.test(normDesc) || regex.test(normName);
                     });
 
                     if (matches.length > 0) {
-                        // Pick cheapest version of "Milk" at this store
+                        // Pick cheapest match at this store
                         matches.sort((a, b) => a.newPrice - b.newPrice);
                         const match = matches[0];
 
@@ -208,13 +215,6 @@ class PlanningController {
                     }
                 });
 
-                // Algorithm: We prefer store with MOST items found. Then Lowest Price.
-                // Simple version: Only consider stores that have at least 1 item.
-                // Weighting: If a store has fewer items, we shouldn't pick it just because total is low (e.g. 0).
-                // Let's assume we want to maximize coverage -> Then minimize cost.
-
-                // Demo Simplification: Just pick store with Lowest Basket Price among those with > 0 items.
-                // (In reality, we'd penalize missing items).
                 if (itemsFoundCount > 0) {
                     if (!bestStore || (itemsFoundCount > bestStoreItems.length) || (itemsFoundCount === bestStoreItems.length && currentBasketPrice < bestStoreBasketPrice)) {
                         bestStore = store;
