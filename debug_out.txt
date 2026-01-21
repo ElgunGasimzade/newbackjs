@@ -1,0 +1,27 @@
+(node:67355) ExperimentalWarning: CommonJS module /opt/homebrew/lib/node_modules/npm/node_modules/debug/src/node.js is loading ES Module /opt/homebrew/lib/node_modules/npm/node_modules/supports-color/index.js using require().
+Support for loading ES Module in require() is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> daily-deals-backend-node@1.0.0 start
+> node server.js
+
+Server running on http://localhost:8080
+API Base: http://localhost:8080/api/v1
+- Auth: /auth/guest-login
+- Home: /home/feed
+- Scan: /scan/process
+- Brands: /deals/brands
+- Planning: /planning/optimize
+- Trips: /trips/last
+- Watchlist: /watchlist
+[Planning] Optimizing Route...
+Loading CSV from: /Users/elgunqasimzade/Downloads/daily-deals-export/screens/node-backend/uploads/finalcsvmarketf.csv
+[Planning] Optimizing for 1 IDs.
+[Planning] Final Shopping List Check: [ 'yuyucu toz (ID: 147)' ]
+[Option A] Detail: BestDealID=147, ReqID=147, Old=24.31, New=17.99, CalcSavings=6.32
+[Planning] Optimizing Route...
+Loading CSV from: /Users/elgunqasimzade/Downloads/daily-deals-export/screens/node-backend/uploads/finalcsvmarketf.csv
+[Planning] Optimizing for 3 IDs.
+[Planning] Final Shopping List Check: [ 'kərə yagı (ID: 1)', 'qara cay (ID: 80)', 'yuyucu toz (ID: 147)' ]
+[Option A] Detail: BestDealID=80, ReqID=80, Old=6.85, New=5.59, CalcSavings=1.2599999999999998
+[Option A] Detail: BestDealID=147, ReqID=147, Old=24.31, New=17.99, CalcSavings=6.32
