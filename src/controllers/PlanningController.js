@@ -84,33 +84,52 @@ class PlanningController {
             const maxSavingsStops = {}; // Store -> [Items]
             let maxSavingsTotalSavings = 0;
 
-            neededItems.forEach(term => {
-                const matches = findMatchesForTerm(term);
-                if (matches.length > 0) {
-                    // Find absolute cheapest among all stores
-                    // Sort by PRICE first. Check for discount? 
-                    // Actually we want lowest price.
-                    matches.sort((a, b) => a.newPrice - b.newPrice);
-                    const bestDeal = matches[0]; // Cheapest option found
+            // If we have specific product IDs picked by the user, Option A should respect them EXACTLY.
+            // Validating user choices ("I picked this deal") -> Planning ("Okay, get THAT deal").
+            if (inputItemIds.length > 0) {
+                console.log(`[Planning] Option A: Using ${inputItemIds.length} strict locked items.`);
+                const resolvedProducts = allProducts.filter(p => inputItemIds.includes(p.id));
 
-                    // DEBUG: Ensure we are capturing savings
-                    const savings = (bestDeal.oldPrice > bestDeal.newPrice) ? (bestDeal.oldPrice - bestDeal.newPrice) : 0;
+                resolvedProducts.forEach(product => {
+                    const savings = (product.oldPrice > product.newPrice) ? (product.oldPrice - product.newPrice) : 0;
 
-                    if (!maxSavingsStops[bestDeal.store]) maxSavingsStops[bestDeal.store] = [];
-                    maxSavingsStops[bestDeal.store].push({
-                        id: bestDeal.id || `ri_${Date.now()}_${Math.random()}`,
-                        name: bestDeal.description || bestDeal.productName,
-                        price: bestDeal.newPrice,
+                    if (!maxSavingsStops[product.store]) maxSavingsStops[product.store] = [];
+                    maxSavingsStops[product.store].push({
+                        id: product.id,
+                        name: product.description || product.productName,
+                        price: product.newPrice,
                         savings: savings,
-                        aisle: "General", // Placeholder
+                        aisle: "General",
                         checked: false
                     });
 
                     maxSavingsTotalSavings += savings;
-                } else {
-                    console.log(`[Planning] No matches found for term: ${term}`);
-                }
-            });
+                });
+            } else {
+                // Legacy Flow: Search for terms and find cheapest
+                neededItems.forEach(term => {
+                    const matches = findMatchesForTerm(term);
+                    if (matches.length > 0) {
+                        matches.sort((a, b) => a.newPrice - b.newPrice);
+                        const bestDeal = matches[0];
+                        const savings = (bestDeal.oldPrice > bestDeal.newPrice) ? (bestDeal.oldPrice - bestDeal.newPrice) : 0;
+
+                        if (!maxSavingsStops[bestDeal.store]) maxSavingsStops[bestDeal.store] = [];
+                        maxSavingsStops[bestDeal.store].push({
+                            id: bestDeal.id || `ri_${Date.now()}_${Math.random()}`,
+                            name: bestDeal.description || bestDeal.productName,
+                            price: bestDeal.newPrice,
+                            savings: savings,
+                            aisle: "General",
+                            checked: false
+                        });
+
+                        maxSavingsTotalSavings += savings;
+                    } else {
+                        console.log(`[Planning] No matches found for term: ${term}`);
+                    }
+                });
+            }
 
             // Convert Option A Map to Route Stops
             // We need to format specific to RouteOption structure
