@@ -8,6 +8,7 @@ const BrandSelectionController = require('../controllers/BrandSelectionControlle
 const PlanningController = require('../controllers/PlanningController');
 const TripController = require('../controllers/TripController');
 const WatchlistController = require('../controllers/WatchlistController');
+const SearchController = require('../controllers/SearchController');
 const multer = require('multer');
 
 // Configure multer for file uploads (needed for scan endpoints)
@@ -18,6 +19,7 @@ const upload = multer({ dest: 'uploads/' });
 
 // Home
 router.get('/home/feed', (req, res) => HomeController.getHomeFeed(req, res));
+router.get('/search', (req, res) => SearchController.search(req, res));
 
 // Scan
 router.post('/scan/process', upload.single('file'), (req, res) => ScanController.processScan(req, res));
