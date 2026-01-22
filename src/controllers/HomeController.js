@@ -38,6 +38,12 @@ class HomeController {
             // Page > 1: Item 0 is reused as "Hero" (ignored by frontend), Items 0..N are List (so we don't lose Item 0).
             const isFirstPage = page === 1;
             const heroProduct = homeProducts.length > 0 ? homeProducts[0] : null;
+
+            // Debug Log for Production Images
+            if (heroProduct) {
+                console.log("[Home] Sample Image URL:", heroProduct.imageUrl);
+            }
+
             const listProducts = isFirstPage ? homeProducts.slice(1) : homeProducts;
 
             res.json({
