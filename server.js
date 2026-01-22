@@ -10,6 +10,11 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+// Static Image Serving
+// Serve images from the 'uploads/images' directory at '/images'
+const path = require('path');
+app.use('/images', express.static(path.join(__dirname, 'uploads/images')));
+
 // Mount all routes under /api/v1
 app.use('/api/v1', apiRoutes);
 

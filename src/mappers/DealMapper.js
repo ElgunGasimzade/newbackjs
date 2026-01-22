@@ -6,39 +6,65 @@
 class DealMapper {
 
     static mapRowToProduct(row) {
-        // Mapping from finalcsvmarketf.csv
-        // id,market,journal_date,discount_start_date,discount_end_date,product_name,brand,category,previous_price,current_price,discount_percent,unit
+        // Mapping from wolt_products.csv
+        // Columns: "id", "Market", "Product Name", "Price", "Original Price", "Discount", "Image URL", "Local Image Path"
 
-        // Use the incremental ID from CSV (more reliable and easier to track)
-        let id = row.id ? row.id.toString() : null;
+        // Use explicit ID from CSV (e.g. "1", "2")
+        // Ensure we strip quotes or whitespace if present
+        let idRaw = row['id'];
+        if (!idRaw && row['\ufeff"id"']) idRaw = row['\ufeff"id"']; // Handle potential BOM
+        // Fallback or Clean
+        const id = idRaw ? `product_${idRaw.replace(/[^0-9]/g, '')}` : `product_${Math.random()}`;
 
-        // If no ID exists (shouldn't happen with new CSV), generate fallback
-        if (!id) {
-            const crypto = require('crypto');
-            const uniqueString = `${row.market}-${row.product_name}-${row.brand}-${row.unit}-${row.current_price}`;
-            id = crypto.createHash('md5').update(uniqueString).digest('hex');
+        // Parse numeric values
+        const parsePrice = (val) => {
+            if (!val) return 0.0;
+            return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0.0;
+        };
+
+        const newPrice = parsePrice(row['Price']);
+        const oldPrice = parsePrice(row['Original Price']);
+        const discountPercent = parseInt(row['Discount'], 10) || 0;
+
+        // Construct Image URL
+        let imageUrl = row['Image URL'];
+        if (row['Local Image Path']) {
+            const filename = row['Local Image Path'].split('/').pop();
+            const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
+            imageUrl = `${BASE_URL}/images/${filename}`;
         }
 
-        // Parse prices
-        const oldPrice = row.previous_price ? parseFloat(row.previous_price) : 0.0;
-        const newPrice = row.current_price ? parseFloat(row.current_price) : 0.0;
+        // --- Data Cleaning (Name & Unit Extraction) ---
+        let rawName = row['Product Name'] || "Unknown Product";
+        const marketName = row['Market'] || "Generic";
+        let details = "";
 
-        // Calculate discount percentage if not provided but prices exist
-        let discountPercent = row.discount_percent ? parseInt(row.discount_percent, 10) : 0;
-        if (!discountPercent && oldPrice > 0 && newPrice > 0 && oldPrice > newPrice) {
-            discountPercent = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+        // 1. Extract Unit (e.g. "1kq", "500 qr", "1 l", "5əd", "2 x 100gr")
+        // Regex looks for number followed optionally by space and then unit
+        const unitRegex = /(\d+(?:\.\d+)?\s*[-xX*]?\s*\d*\s*(?:kq|kg|gr|qr|g|l|ml|litr|ədəd|ed|əd|pcs|pack)\.?)/i;
+        const unitMatch = rawName.match(unitRegex);
+
+        if (unitMatch) {
+            details = unitMatch[0].trim(); // "500 qr"
+            // Remove unit from name to clean it up, but keep if it makes name empty?
+            // Usually better to keep name clean.
+            // Replace with empty string, trimming extra spaces
+            rawName = rawName.replace(unitMatch[0], '').replace(/\s{2,}/g, ' ').trim();
+            // Remove trailing commas or dashes
+            rawName = rawName.replace(/[,-\s]+$/, '');
         }
 
         return {
             id: id,
-            store: row.market || "Unknown Store",
-            productName: row.category || "Unknown Product", // Generic Category (e.g., "Kərə yağı")
-            brandName: row.brand || "Generic",
-            description: row.product_name || "", // Specific details (e.g., "Sevimli Dad Kərə yağı")
+            store: marketName,
+            productName: rawName, // Cleaned Name
+            brandName: marketName, // Store acts as Brand
+            description: rawName, // Cleaned Name
             oldPrice: oldPrice,
             newPrice: newPrice,
             discountPercentage: discountPercent,
-            details: row.unit // Extra details like "82.5% / kq"
+            details: details, // Extracted Unit
+            imageUrl: imageUrl
         };
     }
 
@@ -50,39 +76,45 @@ class DealMapper {
         if (product.discountPercentage >= 20) badge = "BEST DEAL";
         else if (product.discountPercentage >= 15) badge = "GREAT PRICE";
 
-        // Create a descriptive display name with Unit
-        let displayName = product.brandName;
-        const unit = product.details || "";
+        // Create a descriptive display name
+        const brandLower = product.brandName.toLowerCase();
+        // Remove accents for comparison
+        const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        if (product.description) {
-            const brandLower = product.brandName.toLowerCase();
-            const descLower = product.description.toLowerCase();
+        let displayName = product.description;
+        const descLower = normalize(displayName.toLowerCase());
+        const brandNorm = normalize(brandLower);
 
-            // If description already starts with brand (e.g. "Nevskiy dark chocolate"), just use description
-            if (descLower.startsWith(brandLower)) {
-                displayName = product.description;
-            } else {
-                // Otherwise combine: "Nevskiy - Dark Chocolate"
-                displayName = `${product.brandName} - ${product.description}`;
-            }
+        // Remove redundant Brand/Store prefix from Product Name
+        // e.g. Brand: "Bravo", Name: "Bravo Alma" -> "Alma"
+        // Also check "Tamstore Khatai" vs "Tamstore"
+        if (descLower.startsWith(brandNorm)) {
+            displayName = displayName.substring(product.brandName.length).trim();
+            // Remove leading hyphen if exists " - Alma"
+            displayName = displayName.replace(/^[-:\s]+/, '');
         }
 
-        // Append unit if available and not already in text
-        if (unit && !displayName.toLowerCase().includes(unit.toLowerCase())) {
-            displayName = `${displayName} (${unit})`;
+        // Capitalize first letter
+        if (displayName.length > 0) {
+            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        }
+
+        // Append unit in brackets if available
+        if (product.details) {
+            displayName = `${displayName} (${product.details})`;
         }
 
         return {
-            id: product.id, // INCLUDE ID
-            brandName: displayName,
-            logoUrl: "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png", // Placeholder
+            id: product.id,
+            brandName: displayName, // Actually Product Name for UI
+            logoUrl: product.imageUrl || "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png",
             dealText: `at ${product.store}`,
             savings: isDeal ? savings : 0.0,
             price: product.newPrice,
             originalPrice: product.oldPrice,
             badge: badge,
-            isSelected: false, // Default state
-            details: unit // Keep unit in details as well just in case
+            isSelected: false,
+            details: product.details
         };
     }
 

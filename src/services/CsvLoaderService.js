@@ -13,9 +13,7 @@ class CsvLoaderService {
     async loadProducts() {
         return new Promise((resolve, reject) => {
             const results = [];
-            const absolutePath = path.isAbsolute(this.filePath)
-                ? this.filePath
-                : path.join(__dirname, '../../uploads/finalcsvmarketf.csv');
+            const absolutePath = this.filePath;
 
             console.log("Loading CSV from:", absolutePath);
             if (!fs.existsSync(absolutePath)) {

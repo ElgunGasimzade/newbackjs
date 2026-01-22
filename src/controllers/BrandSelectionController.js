@@ -9,29 +9,33 @@ class BrandSelectionController {
 
             if (scanId) {
                 // If we have a scanId, try to find the specific items user confirmed
-                // We need to require ScanController here or pass it in.
-                // Since node modules are cached, require returns the same instance.
                 const ScanController = require('./ScanController');
                 const scanItems = ScanController.getScanItems(scanId);
 
                 if (scanItems && scanItems.length > 0) {
-                    const queries = scanItems.map(i => i.name);
-                    const matchingProducts = await DealService.searchProducts(queries);
-                    // Group them
-                    // Group them using the shared fuzzy logic
+                    const groups = [];
                     const DealMapper = require('../mappers/DealMapper');
-                    const grouped = DealService.groupProducts(matchingProducts);
 
-                    const responseGroups = Object.keys(grouped).map(k => DealMapper.mapToBrandGroup(k, grouped[k]));
-                    data = { groups: responseGroups };
+                    // User Request: "categorized inside items that send in scan page"
+                    // Iterate and create a group for EACH scanned item
+                    for (const item of scanItems) {
+                        const query = item.name;
+                        // Search for this specific item
+                        const matchingProducts = await DealService.searchProducts([query]);
+
+                        // Create a group for this item
+                        if (matchingProducts.length > 0) {
+                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts));
+                        }
+                    }
+
+                    data = { groups: groups };
 
                 } else {
                     // Fallback if scanId invalid or empty
                     data = await DealService.getGroupedBrandDeals();
                 }
             } else {
-                // No scanId, return all (or maybe empty? User said "show every product" was the bug)
-                // Usually "Brands" tab might show "All Brands".
                 data = await DealService.getGroupedBrandDeals();
             }
 

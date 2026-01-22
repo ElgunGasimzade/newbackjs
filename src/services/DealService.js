@@ -1,11 +1,12 @@
 const CsvLoaderService = require('./CsvLoaderService');
 const DealMapper = require('../mappers/DealMapper');
+const Fuse = require('fuse.js');
 
 class DealService {
     constructor() {
-        // Updated to use the larger dataset as requested
+        // Updated to use the new Wolt scraper dataset
         const path = require('path');
-        const finalCsvPath = path.join(__dirname, '../../uploads/finalcsvmarketf.csv');
+        const finalCsvPath = path.join(__dirname, '../../uploads/wolt_products.csv');
         this.csvLoader = new CsvLoaderService(finalCsvPath);
     }
 
@@ -110,38 +111,69 @@ class DealService {
         // Filter valid discounts
         const deals = products
             .filter(p => p.discountPercentage > 0)
-            .sort((a, b) => b.discountPercentage - a.discountPercentage);
+            .sort((a, b) => {
+                const diff = b.discountPercentage - a.discountPercentage;
+                if (diff !== 0) return diff;
+                // Secondary sort by ID for stability
+                return a.id.localeCompare(b.id);
+            });
 
         return deals.slice(offset, offset + limit);
     }
 
     // Search products by a list of query strings
+    // Search products by a list of query strings (e.g. from scanned text)
     async searchProducts(queries = []) {
         const allProducts = await this.getAllProducts(); // Already filtered
         if (!queries || queries.length === 0) return [];
 
-        // Helper to normalize text (remove accents/diacritics)
-        const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const fuseOptions = {
+            keys: ['productName', 'brandName', 'description', 'store'],
+            includeScore: true,
+            threshold: 0.1, // Stricter: 0.1 requires ~90% similarity (requested by user)
+            ignoreLocation: true,
+            minMatchCharLength: 3,
+            useExtendedSearch: true
+        };
 
-        const searchTerms = queries.map(q => normalize(q));
+        const fuse = new Fuse(allProducts, fuseOptions);
+        let results = new Set();
 
-        return allProducts.filter(p => {
-            const pName = normalize(p.productName);
-            const bName = normalize(p.brandName);
-            const desc = normalize(p.description);
-            const store = normalize(p.store);
+        for (const query of queries) {
+            let searchResults = [];
 
-            return searchTerms.some(term => {
-                // Use word boundary matching to avoid false matches
-                const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+            // Special handling for short queries ("un", "su", "et") to avoid "sabun", "sufle", "kotelet"
+            if (query.length <= 3) {
+                // Exact word match using regex for higher precision
+                // or use Fuse extended search with strict equality
+                const strictResults = fuse.search({
+                    $or: [
+                        { productName: `'${query}` }, // ' includes exact match logic in Fuse extended search
+                        { description: `'${query}` }
+                    ]
+                });
 
-                return regex.test(pName) ||
-                    regex.test(bName) ||
-                    regex.test(desc) ||
-                    regex.test(store);
+                // If Fuse extended search isn't strict enough, filter manually with regex word boundaries
+                // This ensures "un" matches "Un 1kq" but NOT "Sabun"
+                const regex = new RegExp(`\\b${query}\\b`, 'i');
+                const manualMatches = allProducts.filter(p =>
+                    regex.test(p.productName) ||
+                    regex.test(p.description)
+                ).map(item => ({ item, score: 0 }));
+
+                searchResults = manualMatches.length > 0 ? manualMatches : strictResults;
+            } else {
+                // Normal fuzzy search for longer queries
+                searchResults = fuse.search(query);
+            }
+
+            // Take top 10 matches for each query
+            searchResults.slice(0, 10).forEach(result => {
+                results.add(result.item);
             });
-        });
+        }
+
+        return Array.from(results);
     }
 
     // New method to get flat list of products (for Home/Planning)

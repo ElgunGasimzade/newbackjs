@@ -3,8 +3,13 @@ const DealService = require('../services/DealService');
 class HomeController {
     async getHomeFeed(req, res) {
         try {
-            // Fetch top 50 deals sorted by discount
-            const topDeals = await DealService.getTopDeals(50);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 20;
+            const offset = (page - 1) * limit;
+            console.log("[Home] Fetching home feed..." + page + " " + limit + " " + offset);
+
+            // Fetch deals with pagination
+            const topDeals = await DealService.getTopDeals(limit, offset);
 
             // Transform to Home Product format
             const homeProducts = topDeals.map((p, index) => {
@@ -14,12 +19,12 @@ class HomeController {
                 }
 
                 return {
-                    id: `prod_${index}`,
+                    id: p.id, // Use stable ID instead of index to prevent duplicate IDs on pagination
                     name: name, // Specific Name with Unit
                     brand: p.brandName,
                     category: p.productName, // Generic Category
                     store: p.store,
-                    imageUrl: "https://imageproxy.wolt.com/menu/menu-images/68ad527871323d956d4b3edd/55d8c312-8e44-11f0-948b-d6bd7deb8ae0_121920.jpg", // Placeholder
+                    imageUrl: p.imageUrl, // Use the mapped URL (remote or local)
                     price: p.newPrice,
                     originalPrice: p.oldPrice,
                     discountPercent: p.discountPercentage,
@@ -28,9 +33,12 @@ class HomeController {
                 };
             });
 
-            // Pick one for Hero
+            // Handle Hero vs List logic
+            // Page 1: Item 0 is Hero, Items 1..N are List.
+            // Page > 1: Item 0 is reused as "Hero" (ignored by frontend), Items 0..N are List (so we don't lose Item 0).
+            const isFirstPage = page === 1;
             const heroProduct = homeProducts.length > 0 ? homeProducts[0] : null;
-            const listProducts = homeProducts.slice(1);
+            const listProducts = isFirstPage ? homeProducts.slice(1) : homeProducts;
 
             res.json({
                 hero: heroProduct ? {
