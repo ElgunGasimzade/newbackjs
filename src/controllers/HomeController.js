@@ -19,7 +19,7 @@ class HomeController {
                     brand: p.brandName,
                     category: p.productName, // Generic Category
                     store: p.store,
-                    imageUrl: "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png", // Placeholder
+                    imageUrl: "https://imageproxy.wolt.com/menu/menu-images/68ad527871323d956d4b3edd/55d8c312-8e44-11f0-948b-d6bd7deb8ae0_121920.jpg", // Placeholder
                     price: p.newPrice,
                     originalPrice: p.oldPrice,
                     discountPercent: p.discountPercentage,
