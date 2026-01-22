@@ -168,62 +168,110 @@ class PlanningController {
             let bestStoreSavings = 0;
             let bestStoreItems = [];
 
-            // Use the same search logic whether we have IDs or Names, 
-            // because neededItems was already set to [Descriptions] if IDs were present.
-            // This ensures we find the "Same Product" (by description) at other stores.
-            uniqueStores.forEach(store => {
-                const storeProducts = allProducts.filter(p => p.store === store);
+            if (inputItemIds.length > 0) {
+                // Strict ID Logic: Find the single store that offers the most savings for the *specific* selected items.
+                // We only look at the items the user explicitly selected.
 
-                let currentBasketPrice = 0;
-                let currentSavings = 0;
-                let foundItems = [];
-                let itemsFoundCount = 0;
+                const selectedProducts = allProducts.filter(p => inputItemIds.includes(p.id));
 
-                neededItems.forEach(term => {
-                    // Find matches AT THIS STORE using exactish description match
-                    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+                // Group by store
+                const storeGroups = {};
+                selectedProducts.forEach(p => {
+                    if (!storeGroups[p.store]) storeGroups[p.store] = [];
+                    storeGroups[p.store].push(p);
+                });
 
-                    const matches = storeProducts.filter(p => {
-                        const normName = normalize(p.productName || p.name);
-                        const normDesc = normalize(p.description);
-                        // If strict mode (ids present), term is Description.
-                        // If legacy mode, term is Name. 
-                        // Checking both matches covers both cases safely.
-                        return regex.test(normDesc) || regex.test(normName);
-                    });
+                // Find store with max savings for these specific items
+                let maxSavingsFound = -1; // Start -1 to ensure even 0 savings overwrites null if valid
 
-                    if (matches.length > 0) {
-                        // Pick cheapest match at this store
-                        matches.sort((a, b) => a.newPrice - b.newPrice);
-                        const match = matches[0];
+                Object.keys(storeGroups).forEach(store => {
+                    const productsInStore = storeGroups[store];
 
-                        currentBasketPrice += match.newPrice;
-                        if (match.oldPrice > match.newPrice) {
-                            currentSavings += (match.oldPrice - match.newPrice);
-                        }
+                    let currentStoreSavings = 0;
+                    let currentStorePrice = 0;
 
-                        foundItems.push({
-                            id: match.id || `ri_${Date.now()}_${Math.random()}`,
-                            name: match.description || match.productName,
-                            price: match.newPrice,
-                            savings: (match.oldPrice - match.newPrice) > 0 ? (match.oldPrice - match.newPrice) : 0,
+                    const mappedItems = productsInStore.map(p => {
+                        const savings = (p.oldPrice > p.newPrice) ? (p.oldPrice - p.newPrice) : 0;
+                        currentStoreSavings += savings;
+                        currentStorePrice += p.newPrice;
+
+                        return {
+                            id: p.id,
+                            name: p.description || p.productName,
+                            price: p.newPrice,
+                            savings: savings,
                             aisle: "General",
                             checked: false
-                        });
-                        itemsFoundCount++;
+                        };
+                    });
+
+                    // Criteria: Best Market = More Discount
+                    if (currentStoreSavings > maxSavingsFound) {
+                        maxSavingsFound = currentStoreSavings;
+                        bestStore = store;
+                        bestStoreSavings = currentStoreSavings;
+                        bestStoreBasketPrice = currentStorePrice;
+                        bestStoreItems = mappedItems;
                     }
                 });
 
-                if (itemsFoundCount > 0) {
-                    if (!bestStore || (itemsFoundCount > bestStoreItems.length) || (itemsFoundCount === bestStoreItems.length && currentBasketPrice < bestStoreBasketPrice)) {
-                        bestStore = store;
-                        bestStoreBasketPrice = currentBasketPrice;
-                        bestStoreSavings = currentSavings;
-                        bestStoreItems = foundItems;
+                console.log(`[Planning] Option B (Strict): Best store is ${bestStore} with ${bestStoreSavings} savings.`);
+
+            } else {
+                // Legacy Fuzzy Logic
+                // Use the same search logic whether we have IDs or Names 
+                // (though in this branch we likely only have names if IDs matched nothing or weren't provided)
+                uniqueStores.forEach(store => {
+                    const storeProducts = allProducts.filter(p => p.store === store);
+
+                    let currentBasketPrice = 0;
+                    let currentSavings = 0;
+                    let foundItems = [];
+                    let itemsFoundCount = 0;
+
+                    neededItems.forEach(term => {
+                        // Find matches AT THIS STORE using exactish description match
+                        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+
+                        const matches = storeProducts.filter(p => {
+                            const normName = normalize(p.productName || p.name);
+                            const normDesc = normalize(p.description);
+                            return regex.test(normDesc) || regex.test(normName);
+                        });
+
+                        if (matches.length > 0) {
+                            // Pick cheapest match at this store
+                            matches.sort((a, b) => a.newPrice - b.newPrice);
+                            const match = matches[0];
+
+                            currentBasketPrice += match.newPrice;
+                            if (match.oldPrice > match.newPrice) {
+                                currentSavings += (match.oldPrice - match.newPrice);
+                            }
+
+                            foundItems.push({
+                                id: match.id || `ri_${Date.now()}_${Math.random()}`,
+                                name: match.description || match.productName,
+                                price: match.newPrice,
+                                savings: (match.oldPrice - match.newPrice) > 0 ? (match.oldPrice - match.newPrice) : 0,
+                                aisle: "General",
+                                checked: false
+                            });
+                            itemsFoundCount++;
+                        }
+                    });
+
+                    if (itemsFoundCount > 0) {
+                        if (!bestStore || (itemsFoundCount > bestStoreItems.length) || (itemsFoundCount === bestStoreItems.length && currentBasketPrice < bestStoreBasketPrice)) {
+                            bestStore = store;
+                            bestStoreBasketPrice = currentBasketPrice;
+                            bestStoreSavings = currentSavings;
+                            bestStoreItems = foundItems;
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Option B Details
             const optionBStopSummaries = bestStore ? [{
