@@ -1,12 +1,34 @@
 const DealService = require('../services/DealService');
 
+const TRANSLATIONS = {
+    en: {
+        hero_title: "Deal of the Day ⚡️",
+        hero_subtitle: "Ends soon",
+        cat_all: "All Deals",
+        cat_food: "Food",
+        cat_home: "Home",
+        badge_discount: "OFF"
+    },
+    az: {
+        hero_title: "Günün Təklifi ⚡️",
+        hero_subtitle: "Bitmək üzrədir",
+        cat_all: "Bütün Təkliflər",
+        cat_food: "Qida",
+        cat_home: "Ev",
+        badge_discount: "ENDİRİM"
+    }
+};
+
 class HomeController {
     async getHomeFeed(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
             const offset = (page - 1) * limit;
-            console.log("[Home] Fetching home feed..." + page + " " + limit + " " + offset);
+            const lang = req.headers['accept-language']?.startsWith('az') ? 'az' : 'en'; // Simple check, default EN
+            const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en'][key] || key;
+
+            console.log(`[Home] Fetching feed (Page ${page}, Lang: ${lang})`);
 
             // Fetch deals with pagination
             const topDeals = await DealService.getTopDeals(limit, offset);
@@ -21,14 +43,14 @@ class HomeController {
                 return {
                     id: p.id, // Use stable ID instead of index to prevent duplicate IDs on pagination
                     name: name, // Specific Name with Unit
-                    brand: p.brandName,
-                    category: p.productName, // Generic Category
+                    brand: p.brand,
+                    category: p.name, // Generic Category (was productName)
                     store: p.store,
                     imageUrl: p.imageUrl, // Use the mapped URL (remote or local)
-                    price: p.newPrice,
-                    originalPrice: p.oldPrice,
-                    discountPercent: p.discountPercentage,
-                    badge: p.discountPercentage > 20 ? "Great Deal" : null,
+                    price: p.price,
+                    originalPrice: p.originalPrice,
+                    discountPercent: p.discountPercent,
+                    badge: p.discountPercent > 20 ? "Great Deal" : null,
                     inStock: true // Required by iOS model
                 };
             });
@@ -48,18 +70,18 @@ class HomeController {
 
             res.json({
                 hero: heroProduct ? {
-                    title: "Daily Drop ⚡️",
-                    subtitle: "Ends soon",
+                    title: t('hero_title'),
+                    subtitle: t('hero_subtitle'),
                     product: {
                         ...heroProduct,
-                        badge: `-${heroProduct.discountPercent}% OFF`,
+                        badge: `-${heroProduct.discountPercent}% ${t('badge_discount')}`,
                         inStock: true
                     }
                 } : null,
                 categories: [
-                    { id: "cat_all", name: "All Deals", selected: true },
-                    { id: "cat_food", name: "Food" },
-                    { id: "cat_home", name: "Home" },
+                    { id: "cat_all", name: t('cat_all'), selected: true },
+                    { id: "cat_food", name: t('cat_food') },
+                    { id: "cat_home", name: t('cat_home') },
                 ],
                 products: listProducts
             });

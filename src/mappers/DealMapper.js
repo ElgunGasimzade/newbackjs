@@ -4,6 +4,16 @@
  * 2. Domain Product Groups -> API Response
  */
 class DealMapper {
+    static TRANSLATIONS = {
+        en: {
+            best_deal: "BEST DEAL",
+            great_price: "GREAT PRICE"
+        },
+        az: {
+            best_deal: "ƏN YAXŞI",
+            great_price: "ƏLA QİYMƏT"
+        }
+    };
 
     static mapRowToProduct(row) {
         // Mapping from wolt_products.csv
@@ -30,7 +40,7 @@ class DealMapper {
         let imageUrl = row['Image URL'];
         if (row['Local Image Path']) {
             const filename = row['Local Image Path'].split('/').pop();
-            const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
+            const BASE_URL = process.env.BASE_URL || "https://newbackjs.onrender.com";
             imageUrl = `${BASE_URL}/images/${filename}`;
         }
 
@@ -57,27 +67,30 @@ class DealMapper {
         return {
             id: id,
             store: marketName,
-            productName: rawName, // Cleaned Name
-            brandName: marketName, // Store acts as Brand
+            name: rawName, // Cleaned Name
+            brand: marketName, // Store acts as Brand
             description: rawName, // Cleaned Name
-            oldPrice: oldPrice,
-            newPrice: newPrice,
-            discountPercentage: discountPercent,
+            originalPrice: oldPrice,
+            price: newPrice,
+            discountPercent: discountPercent,
             details: details, // Extracted Unit
-            imageUrl: imageUrl
+            imageUrl: imageUrl || "https://placehold.co/200x200?text=No+Image",
+            inStock: true
         };
     }
 
-    static mapToBrandItem(product) {
-        const savings = product.oldPrice - product.newPrice;
+    static mapToBrandItem(product, lang = 'en') {
+        const savings = product.originalPrice - product.price;
         const isDeal = savings > 0.01;
+        const t = (key) => this.TRANSLATIONS[lang]?.[key] || this.TRANSLATIONS['en'][key] || key;
 
         let badge = null;
-        if (product.discountPercentage >= 20) badge = "BEST DEAL";
-        else if (product.discountPercentage >= 15) badge = "GREAT PRICE";
+        if (product.discountPercent >= 20) badge = t('best_deal');
+        else if (product.discountPercent >= 15) badge = t('great_price');
 
         // Create a descriptive display name
-        const brandLower = product.brandName.toLowerCase();
+        // Create a descriptive display name
+        const brandLower = product.brand.toLowerCase();
         // Remove accents for comparison
         const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -89,7 +102,7 @@ class DealMapper {
         // e.g. Brand: "Bravo", Name: "Bravo Alma" -> "Alma"
         // Also check "Tamstore Khatai" vs "Tamstore"
         if (descLower.startsWith(brandNorm)) {
-            displayName = displayName.substring(product.brandName.length).trim();
+            displayName = displayName.substring(product.brand.length).trim();
             // Remove leading hyphen if exists " - Alma"
             displayName = displayName.replace(/^[-:\s]+/, '');
         }
@@ -110,20 +123,20 @@ class DealMapper {
             logoUrl: product.imageUrl || "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png",
             dealText: `at ${product.store}`,
             savings: isDeal ? savings : 0.0,
-            price: product.newPrice,
-            originalPrice: product.oldPrice,
+            price: product.price,
+            originalPrice: product.originalPrice,
             badge: badge,
             isSelected: false,
             details: product.details
         };
     }
 
-    static mapToBrandGroup(categoryName, products) {
+    static mapToBrandGroup(categoryName, products, lang = 'en') {
         // Assume all products in one group share the same description (generic category details)
         // or take the first one.
         const firstProduct = products[0];
 
-        const options = products.map(p => this.mapToBrandItem(p));
+        const options = products.map(p => this.mapToBrandItem(p, lang));
 
         // Deduplicate options based on brand + store + price + details
         const uniqueOptions = [];

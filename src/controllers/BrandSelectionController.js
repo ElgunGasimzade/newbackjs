@@ -16,6 +16,7 @@ class BrandSelectionController {
                     const groups = [];
                     const DealMapper = require('../mappers/DealMapper');
 
+                    const lang = req.headers['accept-language']?.startsWith('az') ? 'az' : 'en';
                     // User Request: "categorized inside items that send in scan page"
                     // Iterate and create a group for EACH scanned item
                     for (const item of scanItems) {
@@ -25,7 +26,7 @@ class BrandSelectionController {
 
                         // Create a group for this item
                         if (matchingProducts.length > 0) {
-                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts));
+                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts, lang));
                         }
                     }
 

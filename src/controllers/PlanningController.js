@@ -39,7 +39,7 @@ class PlanningController {
                     // Use strict description to find the EXACT same product at other stores
                     // User wants "my chosings", not generic substitutions.
                     // So we search for "Sevimli Dad Kərə yağı" instead of just "Kərə yağı".
-                    return p.description || p.productName;
+                    return p.description || p.name;
                 });
 
                 console.log(`[Planning] Derived terms from IDs: ${derivedItems.join(', ')}`);
@@ -71,9 +71,9 @@ class PlanningController {
                 const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
                 return allProducts.filter(p => {
                     // Check name, category, and brand
-                    const normName = normalize(p.productName || p.name);
+                    const normName = normalize(p.name);
                     const normDesc = normalize(p.description);
-                    const normBrand = normalize(p.brandName);
+                    const normBrand = normalize(p.brand);
 
                     return regex.test(normName) || regex.test(normDesc) || regex.test(normBrand);
                 });
@@ -92,13 +92,13 @@ class PlanningController {
                 const resolvedProducts = allProducts.filter(p => inputItemIds.includes(p.id));
 
                 resolvedProducts.forEach(product => {
-                    const savings = (product.oldPrice > product.newPrice) ? (product.oldPrice - product.newPrice) : 0;
+                    const savings = (product.originalPrice > product.price) ? (product.originalPrice - product.price) : 0;
 
                     if (!maxSavingsStops[product.store]) maxSavingsStops[product.store] = [];
                     maxSavingsStops[product.store].push({
                         id: product.id,
-                        name: product.description || product.productName,
-                        price: product.newPrice,
+                        name: product.description || product.name,
+                        price: product.price,
                         savings: savings,
                         aisle: "General",
                         checked: false
@@ -111,15 +111,15 @@ class PlanningController {
                 neededItems.forEach(term => {
                     const matches = findMatchesForTerm(term);
                     if (matches.length > 0) {
-                        matches.sort((a, b) => a.newPrice - b.newPrice);
+                        matches.sort((a, b) => a.price - b.price);
                         const bestDeal = matches[0];
-                        const savings = (bestDeal.oldPrice > bestDeal.newPrice) ? (bestDeal.oldPrice - bestDeal.newPrice) : 0;
+                        const savings = (bestDeal.originalPrice > bestDeal.price) ? (bestDeal.originalPrice - bestDeal.price) : 0;
 
                         if (!maxSavingsStops[bestDeal.store]) maxSavingsStops[bestDeal.store] = [];
                         maxSavingsStops[bestDeal.store].push({
                             id: bestDeal.id || `ri_${Date.now()}_${Math.random()}`,
-                            name: bestDeal.description || bestDeal.productName,
-                            price: bestDeal.newPrice,
+                            name: bestDeal.description || bestDeal.name,
+                            price: bestDeal.price,
                             savings: savings,
                             aisle: "General",
                             checked: false
@@ -191,14 +191,14 @@ class PlanningController {
                     let currentStorePrice = 0;
 
                     const mappedItems = productsInStore.map(p => {
-                        const savings = (p.oldPrice > p.newPrice) ? (p.oldPrice - p.newPrice) : 0;
+                        const savings = (p.originalPrice > p.price) ? (p.originalPrice - p.price) : 0;
                         currentStoreSavings += savings;
-                        currentStorePrice += p.newPrice;
+                        currentStorePrice += p.price;
 
                         return {
                             id: p.id,
-                            name: p.description || p.productName,
-                            price: p.newPrice,
+                            name: p.description || p.name,
+                            price: p.price,
                             savings: savings,
                             aisle: "General",
                             checked: false
@@ -242,19 +242,19 @@ class PlanningController {
 
                         if (matches.length > 0) {
                             // Pick cheapest match at this store
-                            matches.sort((a, b) => a.newPrice - b.newPrice);
+                            matches.sort((a, b) => a.price - b.price);
                             const match = matches[0];
 
-                            currentBasketPrice += match.newPrice;
-                            if (match.oldPrice > match.newPrice) {
-                                currentSavings += (match.oldPrice - match.newPrice);
+                            currentBasketPrice += match.price;
+                            if (match.originalPrice > match.price) {
+                                currentSavings += (match.originalPrice - match.price);
                             }
 
                             foundItems.push({
                                 id: match.id || `ri_${Date.now()}_${Math.random()}`,
-                                name: match.description || match.productName,
-                                price: match.newPrice,
-                                savings: (match.oldPrice - match.newPrice) > 0 ? (match.oldPrice - match.newPrice) : 0,
+                                name: match.description || match.name,
+                                price: match.price,
+                                savings: (match.originalPrice - match.price) > 0 ? (match.originalPrice - match.price) : 0,
                                 aisle: "General",
                                 checked: false
                             });

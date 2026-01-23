@@ -12,7 +12,7 @@ async function testSearch() {
         const results = await DealService.searchProducts([query]);
 
         console.log(`Found ${results.length} results.`);
-        results.forEach(p => console.log(`- ${p.productName} (${p.price} AZN)`));
+        results.forEach(p => console.log(`- ${p.name} (${p.price} AZN)`));
 
     } catch (e) {
         console.error(e);

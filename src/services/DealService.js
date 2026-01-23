@@ -19,7 +19,7 @@ class DealService {
             const allProducts = rawRows.map(row => DealMapper.mapRowToProduct(row));
 
             // 3. Filter out products with missing category only (brand can be Generic)
-            const products = allProducts.filter(p => p.productName !== "Unknown Product");
+            const products = allProducts.filter(p => p.name !== "Unknown Product");
 
             // 4. Group by Product Name with Fuzzy/Keyword matching
             const groupedProducts = this.groupProducts(products);
@@ -52,12 +52,12 @@ class DealService {
         };
 
         return products.reduce((acc, product) => {
-            let key = product.productName; // Default to existing category
+            let key = product.name; // Default to existing category
 
             // Normalize all searchable fields
             const normKey = normalize(key);
             const normDesc = normalize(product.description);
-            const normBrand = normalize(product.brandName);
+            const normBrand = normalize(product.brand);
 
             // Advanced Grouping Logic requested by user
             // "if you find differnet 'cay' or 'toyuq' make sure you combine them"
@@ -110,9 +110,9 @@ class DealService {
         const products = await this.getAllProducts();
         // Filter valid discounts
         const deals = products
-            .filter(p => p.discountPercentage > 0)
+            .filter(p => p.discountPercent > 0)
             .sort((a, b) => {
-                const diff = b.discountPercentage - a.discountPercentage;
+                const diff = b.discountPercent - a.discountPercent;
                 if (diff !== 0) return diff;
                 // Secondary sort by ID for stability
                 return a.id.localeCompare(b.id);
@@ -128,7 +128,7 @@ class DealService {
         if (!queries || queries.length === 0) return [];
 
         const fuseOptions = {
-            keys: ['productName', 'brandName', 'description', 'store'],
+            keys: ['name', 'brand', 'description', 'store'],
             includeScore: true,
             threshold: 0.1, // Stricter: 0.1 requires ~90% similarity (requested by user)
             ignoreLocation: true,
@@ -148,7 +148,7 @@ class DealService {
                 // or use Fuse extended search with strict equality
                 const strictResults = fuse.search({
                     $or: [
-                        { productName: `'${query}` }, // ' includes exact match logic in Fuse extended search
+                        { name: `'${query}` }, // ' includes exact match logic in Fuse extended search
                         { description: `'${query}` }
                     ]
                 });
@@ -157,7 +157,7 @@ class DealService {
                 // This ensures "un" matches "Un 1kq" but NOT "Sabun"
                 const regex = new RegExp(`\\b${query}\\b`, 'i');
                 const manualMatches = allProducts.filter(p =>
-                    regex.test(p.productName) ||
+                    regex.test(p.name) ||
                     regex.test(p.description)
                 ).map(item => ({ item, score: 0 }));
 
@@ -182,14 +182,14 @@ class DealService {
         const allProducts = rawRows.map(row => DealMapper.mapRowToProduct(row));
 
         // Filter out products with missing category only (brand can be Generic)
-        return allProducts.filter(p => p.productName !== "Unknown Product");
+        return allProducts.filter(p => p.name !== "Unknown Product");
     }
 
     // Get random deals for Home Screen
     async getRandomDeals(count = 5) {
         const products = await this.getAllProducts();
         // Filter for items with actual discounts
-        const deals = products.filter(p => p.discountPercentage > 0);
+        const deals = products.filter(p => p.discountPercent > 0);
 
         // Shuffle and slice
         const shuffled = deals.sort(() => 0.5 - Math.random());
