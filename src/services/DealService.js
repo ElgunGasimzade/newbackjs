@@ -8,9 +8,65 @@ class DealService {
         const path = require('path');
         const finalCsvPath = path.join(__dirname, '../../uploads/wolt_products.csv');
         this.csvLoader = new CsvLoaderService(finalCsvPath);
+
+        // Store Locations Map (Updated with real addresses and matching CSV names)
+        this.STORE_LOCATIONS = {
+            "Tamstore Khatai": { lat: 40.3845, lon: 49.8660 },
+            "Bravo Supermarket": { lat: 40.3731, lon: 49.8437 },
+            "Araz Torgovaya": { lat: 40.3728, lon: 49.8430 },
+            "Oba Market": { lat: 40.3992, lon: 49.8540 },
+            "Neptun Supermarket": { lat: 40.3967, lon: 49.8152 }
+        };
     }
 
-    async getGroupedBrandDeals() {
+    // Calculate distance in km between two coords
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in km
+    }
+
+    // New Helper for Location Filtering
+    filterProductsByLocation(products, options) {
+        if (!options || !options.lat || !options.lon) {
+            return products;
+        }
+
+        const userLat = parseFloat(options.lat);
+        const userLon = parseFloat(options.lon);
+        const range = parseFloat(options.range) || 5.0; // Default 5km
+
+        if (isNaN(userLat) || isNaN(userLon)) {
+            return products;
+        }
+
+        console.log(`[DealService] Filtering location: Lat=${userLat}, Lon=${userLon}, Range=${range}km`);
+
+        // Identify stores in range
+        const validStores = Object.keys(this.STORE_LOCATIONS).filter(storeName => {
+            const loc = this.STORE_LOCATIONS[storeName];
+            if (!loc) return false; // Strict: exclude stores without location if filtering is on
+            const dist = this.calculateDistance(userLat, userLon, loc.lat, loc.lon);
+            return dist <= range;
+        });
+
+        // Filter products
+        const filtered = products.filter(p => {
+            // Check if product store matches any valid store
+            return validStores.some(validStore => p.store.includes(validStore) || validStore.includes(p.store));
+        });
+
+        console.log(`[DealService] Location Match: ${filtered.length} / ${products.length} products in range.`);
+        return filtered;
+    }
+
+    async getGroupedBrandDeals(options = {}) {
         try {
             // 1. Load Raw Data
             const rawRows = await this.csvLoader.loadProducts();
@@ -18,8 +74,11 @@ class DealService {
             // 2. Transform to Domain Objects
             const allProducts = rawRows.map(row => DealMapper.mapRowToProduct(row));
 
+            // Location Filtering Logic
+            let filteredProducts = this.filterProductsByLocation(allProducts, options);
+
             // 3. Filter out products with missing category only (brand can be Generic)
-            const products = allProducts.filter(p => p.name !== "Unknown Product");
+            const products = filteredProducts.filter(p => p.name !== "Unknown Product");
 
             // 4. Group by Product Name with Fuzzy/Keyword matching
             const groupedProducts = this.groupProducts(products);
@@ -123,8 +182,11 @@ class DealService {
 
     // Search products by a list of query strings
     // Search products by a list of query strings (e.g. from scanned text)
-    async searchProducts(queries = []) {
-        const allProducts = await this.getAllProducts(); // Already filtered
+    async searchProducts(queries = [], options = {}) {
+        let allProducts = await this.getAllProducts();
+
+        // precise location filtering BEFORE search
+        allProducts = this.filterProductsByLocation(allProducts, options);
         if (!queries || queries.length === 0) return [];
 
         const fuseOptions = {

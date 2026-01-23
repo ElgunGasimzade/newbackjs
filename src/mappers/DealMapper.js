@@ -11,9 +11,25 @@ class DealMapper {
         },
         az: {
             best_deal: "ƏN YAXŞI",
-            great_price: "ƏLA QİYMƏT"
+            great_price: "ƏLA QİYMƏT",
+            cheapest: "ƏN UCUZ",
+            best_price: "ƏN YAXŞI QİYMƏT"
         }
     };
+
+    // Helper calculate distance
+    static calculateDistance(lat1, lon1, lat2, lon2) {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return parseFloat((R * c).toFixed(1)); // Distance in km
+    }
 
     static mapRowToProduct(row) {
         // Mapping from wolt_products.csv
@@ -79,14 +95,15 @@ class DealMapper {
         };
     }
 
-    static mapToBrandItem(product, lang = 'en') {
+    static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null) {
         const savings = product.originalPrice - product.price;
         const isDeal = savings > 0.01;
         const t = (key) => this.TRANSLATIONS[lang]?.[key] || this.TRANSLATIONS['en'][key] || key;
 
         let badge = null;
-        if (product.discountPercent >= 20) badge = t('best_deal');
-        else if (product.discountPercent >= 15) badge = t('great_price');
+        // User Request: "Cheapest", "Best Price"
+        if (product.discountPercent >= 20) badge = t('cheapest');
+        else if (product.discountPercent >= 15) badge = t('best_price');
 
         // Create a descriptive display name
         // Create a descriptive display name
@@ -112,9 +129,36 @@ class DealMapper {
             displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
         }
 
-        // Append unit in brackets if available
         if (product.details) {
             displayName = `${displayName} (${product.details})`;
+        }
+
+        // Distance & Time
+        let distance = null;
+        let estTime = null;
+
+        // Lookup Store Location (Need to duplicate map or access DealService? 
+        // Better to pass store location map or have it here. 
+        // For simplicity, let's redefine map here or move to shared config.
+        // Duplicating for speed as requested to "do all").
+        const STORE_LOCATIONS = {
+            "Tamstore Khatai": { lat: 40.3845, lon: 49.8660 },
+            "Bravo Supermarket": { lat: 40.3731, lon: 49.8437 },
+            "Araz Torgovaya": { lat: 40.3728, lon: 49.8430 },
+            "Oba Market": { lat: 40.3992, lon: 49.8540 },
+            "Neptun Supermarket": { lat: 40.3967, lon: 49.8152 }
+        };
+
+        // Match partial store name
+        const storeMatch = Object.keys(STORE_LOCATIONS).find(k => product.store.includes(k) || k.includes(product.store));
+        if (storeMatch && userLat && userLon) {
+            const loc = STORE_LOCATIONS[storeMatch];
+            distance = this.calculateDistance(userLat, userLon, loc.lat, loc.lon);
+            // Estimate: 5 mins per km + 2 mins base
+            if (distance !== null) {
+                const mins = Math.ceil(distance * 5 + 2);
+                estTime = `${mins} min`;
+            }
         }
 
         return {
@@ -127,16 +171,18 @@ class DealMapper {
             originalPrice: product.originalPrice,
             badge: badge,
             isSelected: false,
-            details: product.details
+            details: product.details,
+            distance: distance, // New
+            estTime: estTime    // New
         };
     }
 
-    static mapToBrandGroup(categoryName, products, lang = 'en') {
+    static mapToBrandGroup(categoryName, products, lang = 'en', userLat = null, userLon = null) {
         // Assume all products in one group share the same description (generic category details)
         // or take the first one.
         const firstProduct = products[0];
 
-        const options = products.map(p => this.mapToBrandItem(p, lang));
+        const options = products.map(p => this.mapToBrandItem(p, lang, userLat, userLon));
 
         // Deduplicate options based on brand + store + price + details
         const uniqueOptions = [];

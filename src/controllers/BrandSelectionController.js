@@ -5,6 +5,12 @@ class BrandSelectionController {
     async getBrandDeals(req, res) {
         try {
             const { scanId } = req.query;
+
+            // Log Client Location Request matching User Request
+            const clientLat = req.query.lat || 'N/A';
+            const clientLon = req.query.lon || 'N/A';
+            console.log(`[BrandSelection] Request Rec'd. Location: ${clientLat}, ${clientLon}. ScanID: ${scanId || 'None'}`);
+
             let data;
 
             if (scanId) {
@@ -17,16 +23,24 @@ class BrandSelectionController {
                     const DealMapper = require('../mappers/DealMapper');
 
                     const lang = req.headers['accept-language']?.startsWith('az') ? 'az' : 'en';
+                    const userLat = req.query.lat ? parseFloat(req.query.lat) : null;
+                    const userLon = req.query.lon ? parseFloat(req.query.lon) : null;
+                    const options = {
+                        lat: userLat,
+                        lon: userLon,
+                        range: req.query.range
+                    };
+
                     // User Request: "categorized inside items that send in scan page"
                     // Iterate and create a group for EACH scanned item
                     for (const item of scanItems) {
                         const query = item.name;
-                        // Search for this specific item
-                        const matchingProducts = await DealService.searchProducts([query]);
+                        // Search for this specific item with location filtering
+                        const matchingProducts = await DealService.searchProducts([query], options);
 
                         // Create a group for this item
                         if (matchingProducts.length > 0) {
-                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts, lang));
+                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts, lang, userLat, userLon));
                         }
                     }
 
@@ -34,10 +48,20 @@ class BrandSelectionController {
 
                 } else {
                     // Fallback if scanId invalid or empty
-                    data = await DealService.getGroupedBrandDeals();
+                    const options = {
+                        lat: req.query.lat,
+                        lon: req.query.lon,
+                        range: req.query.range
+                    };
+                    data = await DealService.getGroupedBrandDeals(options);
                 }
             } else {
-                data = await DealService.getGroupedBrandDeals();
+                const options = {
+                    lat: req.query.lat,
+                    lon: req.query.lon,
+                    range: req.query.range
+                };
+                data = await DealService.getGroupedBrandDeals(options);
             }
 
             res.json(data);
