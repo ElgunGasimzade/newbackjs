@@ -30,7 +30,7 @@ class DealMapper {
         let imageUrl = row['Image URL'];
         if (row['Local Image Path']) {
             const filename = row['Local Image Path'].split('/').pop();
-            const BASE_URL = process.env.BASE_URL || "https://newbackjs.onrender.com";
+            const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
             imageUrl = `${BASE_URL}/images/${filename}`;
         }
 
