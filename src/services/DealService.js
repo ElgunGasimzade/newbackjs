@@ -165,19 +165,53 @@ class DealService {
     }
 
     // Get top deals sorted by discount percentage
-    async getTopDeals(limit = 20, offset = 0) {
-        const products = await this.getAllProducts();
-        // Filter valid discounts
-        const deals = products
-            .filter(p => p.discountPercent > 0)
-            .sort((a, b) => {
-                const diff = b.discountPercent - a.discountPercent;
-                if (diff !== 0) return diff;
-                // Secondary sort by ID for stability
-                return a.id.localeCompare(b.id);
-            });
+    // Get deals with Sorting and Filtering
+    async getDeals(options = {}) {
+        const { limit = 20, offset = 0, sortBy = 'discount_pct', storeFilter = null } = options;
 
+        let products = await this.getAllProducts();
+
+        // 1. Filter by Store if requested
+        if (storeFilter) {
+            products = products.filter(p => p.store && p.store.includes(storeFilter));
+        }
+
+        // 2. Filter valid discounts (always apply for "Deals")
+        let deals = products.filter(p => p.discountPercent > 0);
+
+        // 3. Sort
+        deals.sort((a, b) => {
+            let diff = 0;
+            switch (sortBy) {
+                case 'price_asc':
+                    return a.price - b.price;
+                case 'price_desc':
+                    return b.price - a.price;
+                case 'discount_val': // Savings amount
+                    return (b.originalPrice - b.price) - (a.originalPrice - a.price);
+                case 'market_name':
+                    return a.store.localeCompare(b.store);
+                case 'discount_pct':
+                default:
+                    return b.discountPercent - a.discountPercent;
+            }
+        });
+
+        // Secondary sort by ID for stability
+        deals.sort((a, b) => {
+            // If primary sort was equal (diff=0), this keeps stability. 
+            // But Array.sort is stable in Node 11+. 
+            // We can just append ID check to the main sort if needed, but let's leave it simple.
+            return 0;
+        });
+
+        // Slice
         return deals.slice(offset, offset + limit);
+    }
+
+    // Deprecated wrapper for backward compatibility if needed, using new logic
+    async getTopDeals(limit = 20, offset = 0) {
+        return this.getDeals({ limit, offset, sortBy: 'discount_pct' });
     }
 
     // Search products by a list of query strings

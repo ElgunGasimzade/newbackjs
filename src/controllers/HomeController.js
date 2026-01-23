@@ -25,16 +25,19 @@ class HomeController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
             const offset = (page - 1) * limit;
+            const sortBy = req.query.sort || 'discount_pct';
+            const storeFilter = req.query.store || null;
+
             const lang = req.headers['accept-language']?.startsWith('az') ? 'az' : 'en'; // Simple check, default EN
             const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en'][key] || key;
 
-            console.log(`[Home] Fetching feed (Page ${page}, Lang: ${lang})`);
+            console.log(`[Home] Fetching feed (Page ${page}, Sort: ${sortBy}, Store: ${storeFilter || 'All'})`);
 
-            // Fetch deals with pagination
-            const topDeals = await DealService.getTopDeals(limit, offset);
+            // Fetch deals with pagination, sorting, and filtering
+            const deals = await DealService.getDeals({ limit, offset, sortBy, storeFilter });
 
             // Transform to Home Product format
-            const homeProducts = topDeals.map((p, index) => {
+            const homeProducts = deals.map((p, index) => {
                 let name = p.description;
                 if (p.details && !name.includes(p.details)) {
                     name = `${name} (${p.details})`;
