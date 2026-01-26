@@ -19,6 +19,7 @@ const upload = multer({ dest: 'uploads/' });
 
 // Home
 router.get('/home/feed', (req, res) => HomeController.getHomeFeed(req, res));
+router.get('/stores', (req, res) => HomeController.getAvailableStores(req, res));
 router.get('/search', (req, res) => SearchController.search(req, res));
 
 // Scan

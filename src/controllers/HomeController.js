@@ -93,6 +93,16 @@ class HomeController {
             res.status(500).json({ error: "Failed to load home feed" });
         }
     }
+
+    async getAvailableStores(req, res) {
+        try {
+            const stores = DealService.getAvailableStores();
+            res.json(stores);
+        } catch (e) {
+            console.error(e);
+            res.status(500).json({ error: "Failed to load stores" });
+        }
+    }
 }
 
 module.exports = new HomeController();

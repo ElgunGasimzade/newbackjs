@@ -95,7 +95,7 @@ class DealMapper {
         };
     }
 
-    static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null) {
+    static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
         const savings = product.originalPrice - product.price;
         const isDeal = savings > 0.01;
         const t = (key) => this.TRANSLATIONS[lang]?.[key] || this.TRANSLATIONS['en'][key] || key;
@@ -105,7 +105,6 @@ class DealMapper {
         if (product.discountPercent >= 20) badge = t('cheapest');
         else if (product.discountPercent >= 15) badge = t('best_price');
 
-        // Create a descriptive display name
         // Create a descriptive display name
         const brandLower = product.brand.toLowerCase();
         // Remove accents for comparison
@@ -137,22 +136,10 @@ class DealMapper {
         let distance = null;
         let estTime = null;
 
-        // Lookup Store Location (Need to duplicate map or access DealService? 
-        // Better to pass store location map or have it here. 
-        // For simplicity, let's redefine map here or move to shared config.
-        // Duplicating for speed as requested to "do all").
-        const STORE_LOCATIONS = {
-            "Tamstore Khatai": { lat: 40.3845, lon: 49.8660 },
-            "Bravo Supermarket": { lat: 40.3731, lon: 49.8437 },
-            "Araz Torgovaya": { lat: 40.3728, lon: 49.8430 },
-            "Oba Market": { lat: 40.3992, lon: 49.8540 },
-            "Neptun Supermarket": { lat: 40.3967, lon: 49.8152 }
-        };
-
         // Match partial store name
-        const storeMatch = Object.keys(STORE_LOCATIONS).find(k => product.store.includes(k) || k.includes(product.store));
+        const storeMatch = Object.keys(storeLocations).find(k => product.store.includes(k) || k.includes(product.store));
         if (storeMatch && userLat && userLon) {
-            const loc = STORE_LOCATIONS[storeMatch];
+            const loc = storeLocations[storeMatch];
             distance = this.calculateDistance(userLat, userLon, loc.lat, loc.lon);
             // Estimate: 5 mins per km + 2 mins base
             if (distance !== null) {
@@ -177,12 +164,12 @@ class DealMapper {
         };
     }
 
-    static mapToBrandGroup(categoryName, products, lang = 'en', userLat = null, userLon = null) {
+    static mapToBrandGroup(categoryName, products, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
         // Assume all products in one group share the same description (generic category details)
         // or take the first one.
         const firstProduct = products[0];
 
-        const options = products.map(p => this.mapToBrandItem(p, lang, userLat, userLon));
+        const options = products.map(p => this.mapToBrandItem(p, lang, userLat, userLon, storeLocations));
 
         // Deduplicate options based on brand + store + price + details
         const uniqueOptions = [];
