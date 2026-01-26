@@ -605,11 +605,30 @@ class DealService {
     }
 
     // Get list of all available stores
-    getAvailableStores() {
-        return Object.keys(this.STORE_LOCATIONS).map(name => ({
+    // Get list of all available stores
+    getAvailableStores(options = {}) {
+        let stores = Object.keys(this.STORE_LOCATIONS).map(name => ({
             name: name,
             ...this.STORE_LOCATIONS[name]
         }));
+
+        const { lat, lon, range = 5.0 } = options;
+
+        if (lat && lon) {
+            const userLat = parseFloat(lat);
+            const userLon = parseFloat(lon);
+            const r = parseFloat(range);
+
+            if (!isNaN(userLat) && !isNaN(userLon)) {
+                stores = stores.filter(store => {
+                    if (!store.lat || !store.lon) return false;
+                    const dist = this.calculateDistance(userLat, userLon, store.lat, store.lon);
+                    return dist <= r;
+                });
+            }
+        }
+
+        return stores;
     }
 }
 

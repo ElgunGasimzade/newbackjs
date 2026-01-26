@@ -100,7 +100,11 @@ class HomeController {
 
     async getAvailableStores(req, res) {
         try {
-            const stores = DealService.getAvailableStores();
+            const lat = req.query.lat ? parseFloat(req.query.lat) : null;
+            const lon = req.query.lon ? parseFloat(req.query.lon) : null;
+            const range = req.query.range ? parseFloat(req.query.range) : 5.0;
+
+            const stores = DealService.getAvailableStores({ lat, lon, range });
             res.json(stores);
         } catch (e) {
             console.error(e);
