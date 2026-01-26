@@ -480,6 +480,9 @@ class DealService {
 
         let products = await this.getAllProducts();
 
+        // 0. Filter by Location (if enabled in app)
+        products = this.filterProductsByLocation(products, options);
+
         // 1. Filter by Store if requested
         if (storeFilter) {
             products = products.filter(p => p.store && p.store.includes(storeFilter));

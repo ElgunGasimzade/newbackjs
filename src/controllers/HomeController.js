@@ -27,14 +27,18 @@ class HomeController {
             const offset = (page - 1) * limit;
             const sortBy = req.query.sort || 'discount_pct';
             const storeFilter = req.query.store || null;
+            // Location params
+            const lat = req.query.lat ? parseFloat(req.query.lat) : null;
+            const lon = req.query.lon ? parseFloat(req.query.lon) : null;
+            const range = req.query.range ? parseFloat(req.query.range) : 5.0;
 
             const lang = req.headers['accept-language']?.startsWith('az') ? 'az' : 'en'; // Simple check, default EN
             const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en'][key] || key;
 
-            console.log(`[Home] Fetching feed (Page ${page}, Sort: ${sortBy}, Store: ${storeFilter || 'All'})`);
+            console.log(`[Home] Fetching feed (Page ${page}, Sort: ${sortBy}, Store: ${storeFilter || 'All'}, Loc: ${lat},${lon})`);
 
             // Fetch deals with pagination, sorting, and filtering
-            const deals = await DealService.getDeals({ limit, offset, sortBy, storeFilter });
+            const deals = await DealService.getDeals({ limit, offset, sortBy, storeFilter, lat, lon, range });
 
             // Transform to Home Product format
             const homeProducts = deals.map((p, index) => {
