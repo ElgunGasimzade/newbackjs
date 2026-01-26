@@ -40,7 +40,7 @@ class BrandSelectionController {
 
                         // Create a group for this item
                         if (matchingProducts.length > 0) {
-                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts, lang, userLat, userLon));
+                            groups.push(DealMapper.mapToBrandGroup(query, matchingProducts, lang, userLat, userLon, DealService.STORE_LOCATIONS));
                         }
                     }
 
