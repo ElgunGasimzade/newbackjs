@@ -115,13 +115,7 @@ class DealMapper {
 
     static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
         const savings = product.originalPrice - product.price;
-        const isDeal = savings > 0.01;
-        const t = (key) => this.TRANSLATIONS[lang]?.[key] || this.TRANSLATIONS['en'][key] || key;
-
-        let badge = null;
-        // User Request: "Cheapest", "Best Price"
-        if (product.discountPercent >= 20) badge = t('cheapest');
-        else if (product.discountPercent >= 15) badge = t('best_price');
+        // const isDeal = savings > 0.01; // Not used for text, used for value
 
         // Create a descriptive display name
         const brandLower = product.brand.toLowerCase();
@@ -132,16 +126,11 @@ class DealMapper {
         const descLower = normalize(displayName.toLowerCase());
         const brandNorm = normalize(brandLower);
 
-        // Remove redundant Brand/Store prefix from Product Name
-        // e.g. Brand: "Bravo", Name: "Bravo Alma" -> "Alma"
-        // Also check "Tamstore Khatai" vs "Tamstore"
         if (descLower.startsWith(brandNorm)) {
             displayName = displayName.substring(product.brand.length).trim();
-            // Remove leading hyphen if exists " - Alma"
             displayName = displayName.replace(/^[-:\s]+/, '');
         }
 
-        // Capitalize first letter
         if (displayName.length > 0) {
             displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
         }
@@ -154,12 +143,10 @@ class DealMapper {
         let distance = null;
         let estTime = null;
 
-        // Match partial store name
         const storeMatch = Object.keys(storeLocations).find(k => product.store.includes(k) || k.includes(product.store));
         if (storeMatch && userLat && userLon) {
             const loc = storeLocations[storeMatch];
             distance = this.calculateDistance(userLat, userLon, loc.lat, loc.lon);
-            // Estimate: 5 mins per km + 2 mins base
             if (distance !== null) {
                 const mins = Math.ceil(distance * 5 + 2);
                 estTime = `${mins} min`;
@@ -168,31 +155,29 @@ class DealMapper {
 
         return {
             id: product.id,
-            brandName: displayName, // Actually Product Name for UI
+            brandName: displayName,
             logoUrl: product.imageUrl || "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png",
-            dealText: `at ${product.store}`,
-            savings: isDeal ? savings : 0.0,
+            dealText: product.store, // Removed "at "
+            savings: savings > 0.01 ? savings : 0.0,
             price: product.price,
             originalPrice: product.originalPrice,
-            badge: badge,
+            badge: null, // Will be set in group map
             isSelected: false,
             details: product.details,
-            distance: distance, // New
-            estTime: estTime    // New
+            distance: distance,
+            estTime: estTime
         };
     }
 
     static mapToBrandGroup(categoryName, products, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
-        // Assume all products in one group share the same description (generic category details)
-        // or take the first one.
-        const firstProduct = products[0];
+        const t = (key) => this.TRANSLATIONS[lang]?.[key] || this.TRANSLATIONS['en'][key] || key;
 
+        const firstProduct = products[0];
         const options = products.map(p => this.mapToBrandItem(p, lang, userLat, userLon, storeLocations));
 
-        // Deduplicate options based on brand + store + price + details
+        // Deduplicate
         const uniqueOptions = [];
         const seen = new Set();
-
         for (const opt of options) {
             const uniqueKey = `${opt.brandName}|${opt.dealText}|${opt.price}|${opt.details}`;
             if (!seen.has(uniqueKey)) {
@@ -201,23 +186,57 @@ class DealMapper {
             }
         }
 
-        // Replace options with unique list
-        const finalOptions = uniqueOptions;
+        // --- Smart Badge Logic ---
+        if (uniqueOptions.length > 1) {
+            // Find Min Price & Max Savings
+            const minPrice = Math.min(...uniqueOptions.map(o => o.price || 99999));
+            const maxSavings = Math.max(...uniqueOptions.map(o => o.savings));
 
-        // Default selected item
-        if (finalOptions.length > 0) {
-            finalOptions[0].isSelected = true;
+            // Count how many have minPrice
+            const minPriceCount = uniqueOptions.filter(o => (o.price || 99999) === minPrice).length;
+
+            uniqueOptions.forEach(opt => {
+                opt.badge = null; // Reset
+
+                // 1. Check Cheapest (Only if 2 or fewer items share this price)
+                const isCheapest = (opt.price || 99999) === minPrice;
+                if (isCheapest && minPriceCount <= 2) {
+                    opt.badge = t('cheapest');
+                }
+
+                // 2. Check Most Discount (Always shown, overrides Cheapest if both)
+                if (opt.savings === maxSavings && maxSavings > 0.01) {
+                    // Force uppercase or normalized key?
+                    // User said "most discount"
+                    opt.badge = "MOST DISCOUNT";
+                }
+            });
+        } else if (uniqueOptions.length === 1) {
+            // Single item with good savings
+            if (uniqueOptions[0].savings > 0.50) {
+                uniqueOptions[0].badge = "MOST DISCOUNT";
+            }
         }
 
-        // Determine status
+        // Sort: Cheapest first by default? User didn't ask, but good UX. 
+        // Or keep API order (relevance). Keep API order.
+
+        // Default Select: Cheapest
+        if (uniqueOptions.length > 0) {
+            // Find the one with 'cheapest' badge or just first
+            const cheapest = uniqueOptions.find(o => o.badge === t('cheapest'));
+            if (cheapest) cheapest.isSelected = true;
+            else uniqueOptions[0].isSelected = true;
+        }
+
         let status = "DEAL_FOUND";
-        if (finalOptions.length === 0) status = "NO_DEAL";
+        if (uniqueOptions.length === 0) status = "NO_DEAL";
 
         return {
             itemName: categoryName,
             itemDetails: firstProduct ? `${firstProduct.description}` : "",
             status: status,
-            options: finalOptions
+            options: uniqueOptions
         };
     }
 }

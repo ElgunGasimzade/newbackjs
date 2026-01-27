@@ -8,9 +8,16 @@ class SearchController {
                 return res.status(400).json({ error: "Query parameter 'q' is required" });
             }
 
+            // Pass location options for filtering
+            const options = {
+                lat: req.query.lat,
+                lon: req.query.lon,
+                range: req.query.range
+            };
+
             // Reuse existing searchProducts service which takes array
             // We pass single query as [query]
-            const results = await DealService.searchProducts([query]);
+            const results = await DealService.searchProducts([query], options);
 
             // Limit to top 10 results for "little non scrollable" UI
             const topResults = results.slice(0, 10);
