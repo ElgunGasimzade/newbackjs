@@ -40,7 +40,8 @@ class AuthController {
                     id: user.id,
                     deviceId: user.device_id,
                     email: user.email,
-                    phone: user.phone
+                    phone: user.phone,
+                    username: user.username
                 },
                 isNewUser
             });
@@ -52,9 +53,9 @@ class AuthController {
     }
 
     // PUT /api/v1/auth/profile
-    // Body: { userId, email, phone }
+    // Body: { userId, email, phone, username }
     async updateProfile(req, res) {
-        const { userId, email, phone } = req.body;
+        const { userId, email, phone, username } = req.body;
 
         if (!userId) {
             return res.status(400).json({ error: "User ID is required" });
@@ -63,12 +64,6 @@ class AuthController {
         try {
             const client = await db.getClient();
 
-            // Update fields
-            // We use COALESCE to keep existing values if not provided (or handle in frontend)
-            // But here let's assume partial updates are allowed via separate queries or dynamic query builder.
-            // For simplicity: Update both if provided, or keep old.
-
-            // First get current user
             const currentRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             if (currentRes.rows.length === 0) {
                 client.release();
@@ -78,10 +73,11 @@ class AuthController {
 
             const newEmail = email !== undefined ? email : currentUser.email;
             const newPhone = phone !== undefined ? phone : currentUser.phone;
+            const newUsername = username !== undefined ? username : currentUser.username;
 
             const updateRes = await client.query(
-                'UPDATE users SET email = $1, phone = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-                [newEmail, newPhone, userId]
+                'UPDATE users SET email = $1, phone = $2, username = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
+                [newEmail, newPhone, newUsername, userId]
             );
 
             client.release();
@@ -89,8 +85,10 @@ class AuthController {
                 success: true,
                 user: {
                     id: updateRes.rows[0].id,
+                    deviceId: updateRes.rows[0].device_id, // Added this line to fix decoding error
                     email: updateRes.rows[0].email,
-                    phone: updateRes.rows[0].phone
+                    phone: updateRes.rows[0].phone,
+                    username: updateRes.rows[0].username
                 }
             });
 
