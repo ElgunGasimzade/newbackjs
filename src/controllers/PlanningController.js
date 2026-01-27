@@ -141,14 +141,37 @@ class PlanningController {
                 summary: `${maxSavingsStops[storeName].length} items to buy`
             }));
 
+            // --- Calculate Total Time based on Distance ---
+            let totalDistanceKm = 0;
+            let previousLoc = null; // Ideally start from User Location if passed in req.body.userLat/Lon
+            // For now, assume User is at first store (or add travel to first store if user loc available)
+
+            const orderedStopNames = Object.keys(maxSavingsStops);
+            // Simple logic: Visit in order of keys? Ideally TSP but keys order is random-ish.
+            // Let's keep keys order for now.
+
+            orderedStopNames.forEach(storeName => {
+                const loc = DealService.getStoreCoordinates(storeName);
+                if (loc && loc.lat && loc.lon) {
+                    if (previousLoc) {
+                        totalDistanceKm += DealService.calculateDistance(previousLoc.lat, previousLoc.lon, loc.lat, loc.lon);
+                    }
+                    previousLoc = loc;
+                }
+            });
+
+            // Heuristic: 3 mins per km driving in city
+            // + NO shopping time overhead as requested ("only time from store to store")
+            const estimatedMins = Math.ceil(totalDistanceKm * 3);
+
             // Save Option A Details for later retrieval
             const optionADetails = {
                 totalSavings: maxSavingsTotalSavings,
-                estTime: `${Object.keys(maxSavingsStops).length * 15} mins`, // Mock time: 15m per stop
+                estTime: `${estimatedMins} mins`,
                 stops: Object.keys(maxSavingsStops).map((storeName, index) => ({
                     sequence: index + 1,
                     store: storeName,
-                    distance: `${(Math.random() * 2).toFixed(1)} km`,
+                    distance: `${(Math.random() * 2).toFixed(1)} km`, // Distance from USER? Or leg distance? Keeping random for now as "Distance away" label usually implies from user.
                     color: index % 2 === 0 ? "green" : "blue",
                     items: maxSavingsStops[storeName]
                 }))

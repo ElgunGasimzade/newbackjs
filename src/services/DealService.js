@@ -363,6 +363,10 @@ class DealService {
 
         return stores;
     }
+
+    getStoreCoordinates(storeName) {
+        return this.STORE_LOCATIONS[storeName];
+    }
 }
 
 module.exports = new DealService();

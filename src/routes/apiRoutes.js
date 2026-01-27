@@ -40,4 +40,16 @@ router.get('/trips/last', (req, res) => TripController.getLastTrip(req, res));
 // Watchlist
 router.get('/watchlist', (req, res) => WatchlistController.getWatchlist(req, res));
 
+const AuthController = require('../controllers/AuthController');
+const PlanController = require('../controllers/PlanController');
+
+// ... existing controllers ...
+
+router.post('/auth/device-login', (req, res) => AuthController.loginDevice(req, res));
+router.put('/auth/profile', (req, res) => AuthController.updateProfile(req, res));
+
+router.post('/plans', (req, res) => PlanController.savePlan(req, res));
+router.get('/plans/:userId', (req, res) => PlanController.getPlans(req, res));
+router.put('/plans/:planId/complete', (req, res) => PlanController.completePlan(req, res));
+
 module.exports = router;
