@@ -1,25 +1,16 @@
-const DealService = require('./src/services/DealService');
+const dealService = require('./src/services/DealService');
 
-async function test() {
-    try {
-        console.log("Testing DB connection and Service...");
-        const products = await DealService.getAllProducts();
-        console.log("Success! Loaded products:", products.length);
-
-        if (products.length > 0) {
-            console.log("Sample Product:", products[0]);
-        }
-
-        // Test filtering (which uses getAllProducts underneath)
-        console.log("Testing getDeals...");
-        const deals = await DealService.getDeals({ limit: 5 });
-        console.log("Deals found:", deals.length);
-
-        process.exit(0);
-    } catch (e) {
-        console.error("Verification Failed:", e);
-        process.exit(1);
+// Wait for async load
+setTimeout(() => {
+    const stores = dealService.getAvailableStores();
+    console.log(`Loaded ${stores.length} stores.`);
+    if (stores.length > 0) {
+        console.log("Sample Store:", stores[0]);
     }
-}
 
-test();
+    // Test Distance calc
+    const filtered = dealService.filterProductsByLocation([{ store: "Bravo Supermarket Sumqait Bagcagli" }], { lat: 40.575, lon: 49.643, range: 1 });
+    console.log("Filtered Matches (should be 1):", filtered.length);
+
+    process.exit(0);
+}, 2000);
