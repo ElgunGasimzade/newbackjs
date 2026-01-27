@@ -1,6 +1,7 @@
 const CsvLoaderService = require('./CsvLoaderService');
 const DealMapper = require('../mappers/DealMapper');
 const Fuse = require('fuse.js');
+const db = require('../config/db');
 
 class DealService {
     constructor() {
@@ -374,11 +375,8 @@ class DealService {
 
     async getGroupedBrandDeals(options = {}) {
         try {
-            // 1. Load Raw Data
-            const rawRows = await this.csvLoader.loadProducts();
-
-            // 2. Transform to Domain Objects
-            const allProducts = rawRows.map(row => DealMapper.mapRowToProduct(row));
+            // 1. Load Data from DB (Cached)
+            const allProducts = await this.getAllProducts();
 
             // Location Filtering Logic
             let filteredProducts = this.filterProductsByLocation(allProducts, options);
@@ -584,13 +582,31 @@ class DealService {
         return Array.from(results);
     }
 
-    // New method to get flat list of products (for Home/Planning)
     async getAllProducts() {
-        const rawRows = await this.csvLoader.loadProducts();
-        const allProducts = rawRows.map(row => DealMapper.mapRowToProduct(row));
+        if (this._cachedProducts) return this._cachedProducts;
 
-        // Filter out products with missing category only (brand can be Generic)
-        return allProducts.filter(p => p.name !== "Unknown Product");
+        try {
+            const res = await db.query('SELECT * FROM products');
+            this._cachedProducts = res.rows.map(row => ({
+                id: row.id,
+                store: row.store,
+                name: row.name,
+                brand: row.brand,
+                description: row.description,
+                originalPrice: row.original_price, // map snake_case to camelCase
+                price: row.price,
+                discountPercent: row.discount_percent,
+                details: row.details,
+                imageUrl: row.image_url,
+                inStock: row.in_stock
+            }));
+
+            console.log(`[DealService] Loaded ${this._cachedProducts.length} products from DB.`);
+            return this._cachedProducts;
+        } catch (e) {
+            console.error("Failed to load products from DB", e);
+            throw e;
+        }
     }
 
     // Get random deals for Home Screen
