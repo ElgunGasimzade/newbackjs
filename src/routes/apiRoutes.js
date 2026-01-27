@@ -51,5 +51,7 @@ router.put('/auth/profile', (req, res) => AuthController.updateProfile(req, res)
 router.post('/plans', (req, res) => PlanController.savePlan(req, res));
 router.get('/plans/:userId', (req, res) => PlanController.getPlans(req, res));
 router.put('/plans/:planId/complete', (req, res) => PlanController.completePlan(req, res));
+router.delete('/plans/:planId', (req, res) => PlanController.deletePlan(req, res));
+router.get('/plans/:userId/stats', (req, res) => PlanController.getStats(req, res));
 
 module.exports = router;

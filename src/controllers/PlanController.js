@@ -92,6 +92,65 @@ class PlanController {
             res.status(500).json({ error: "Failed to complete plan" });
         }
     }
+
+    // DELETE /api/v1/plans/:planId (Soft Delete)
+    async deletePlan(req, res) {
+        const { planId } = req.params;
+
+        try {
+            const client = await db.getClient();
+            // Soft Delete: Just hide it
+            const result = await client.query(`
+                UPDATE plans
+                SET is_hidden = TRUE
+                WHERE id = $1 
+                RETURNING id
+            `, [planId]);
+
+            client.release();
+            if (result.rowCount === 0) {
+                return res.status(404).json({ error: "Plan not found" });
+            }
+            res.json({ success: true, id: planId });
+
+        } catch (e) {
+            console.error("Delete Plan Error:", e);
+            res.status(500).json({ error: "Failed to delete plan" });
+        }
+    }
+
+    // GET /api/v1/plans/:userId/stats
+    async getStats(req, res) {
+        const { userId } = req.params;
+        try {
+            const client = await db.getClient();
+            // Aggregate stats from ALL completed plans (even hidden ones)
+            // Check JSONB structure for savings? 
+            // "totalSavings" is inside route_details -> totalSavings
+            // Postgres JSONB query: SUM((route_details->>'totalSavings')::numeric)
+
+            const result = await client.query(`
+                SELECT 
+                    COUNT(*) as total_trips,
+                    COALESCE(SUM((route_details->>'totalSavings')::numeric), 0) as total_savings
+                FROM plans
+                WHERE user_id = $1 
+                  AND status = 'completed'
+             `, [userId]);
+
+            client.release();
+            const stats = result.rows[0];
+
+            res.json({
+                totalTrips: parseInt(stats.total_trips),
+                totalSavings: parseFloat(stats.total_savings)
+            });
+
+        } catch (e) {
+            console.error("Get Stats Error:", e);
+            res.status(500).json({ error: "Failed to fetch stats" });
+        }
+    }
 }
 
 module.exports = new PlanController();
