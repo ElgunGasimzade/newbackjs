@@ -63,17 +63,37 @@ class HomeController {
             });
 
             // Handle Hero vs List logic
-            // Page 1: Item 0 is Hero, Items 1..N are List.
-            // Page > 1: Item 0 is reused as "Hero" (ignored by frontend), Items 0..N are List (so we don't lose Item 0).
+            // Page 1: Find best deal WITH IMAGE for Hero.
+            // Page > 1: No Hero (client ignores), just list.
+
             const isFirstPage = page === 1;
-            const heroProduct = homeProducts.length > 0 ? homeProducts[0] : null;
+            let heroProduct = null;
+            let listProducts = homeProducts;
 
-            // Debug Log for Production Images
-            if (heroProduct) {
-                console.log("[Home] Sample Image URL:", heroProduct.imageUrl);
+            if (isFirstPage && homeProducts.length > 0) {
+                // specific user request: "never make products without image deal of day"
+                // Find first product with a valid image (not placeholder)
+                const heroIndex = homeProducts.findIndex(p => p.imageUrl && !p.imageUrl.includes("placehold.co"));
+
+                if (heroIndex !== -1) {
+                    heroProduct = homeProducts[heroIndex];
+                    // Remove Hero from the list so it doesn't appear twice
+                    listProducts = homeProducts.filter((_, i) => i !== heroIndex);
+                } else {
+                    // Fallback if ALL have no image (rare)
+                    heroProduct = homeProducts[0];
+                    listProducts = homeProducts.slice(1);
+                }
+            } else if (!isFirstPage) {
+                // For pagination, we don't extract a hero, just return the full list
+                // Item 0 is technically "Hero" in JSON structure but frontend appends to list.
+                // Wait, frontend pagination logic might expect full list.
+                // Current frontend logic: page 1 splits hero/list. Page > 1 appends to list.
+                // SO for page > 1, we return all. 
+                listProducts = homeProducts;
+                // Hero is null or ignored.
+                heroProduct = homeProducts.length > 0 ? homeProducts[0] : null;
             }
-
-            const listProducts = isFirstPage ? homeProducts.slice(1) : homeProducts;
 
             res.json({
                 hero: heroProduct ? {

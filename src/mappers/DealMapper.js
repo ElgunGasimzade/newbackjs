@@ -113,6 +113,17 @@ class DealMapper {
         };
     }
 
+    static formatStoreName(name) {
+        if (!name) return "";
+        // Replace dashes/underscores with spaces
+        let formatted = name.replace(/[-_]/g, ' ');
+        // Title Case
+        formatted = formatted.replace(/\w\S*/g, (txt) => {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+        return formatted.trim();
+    }
+
     static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
         const savings = product.originalPrice - product.price;
         // const isDeal = savings > 0.01; // Not used for text, used for value
@@ -157,7 +168,8 @@ class DealMapper {
             id: product.id,
             brandName: displayName,
             logoUrl: product.imageUrl || "https://media.screensdesign.com/gasset/c32d330e-31e8-47f6-b125-f2a7ce9de999.png",
-            dealText: product.store, // Removed "at "
+            dealText: this.formatStoreName(product.store), // Removed "at " and formatted
+
             savings: savings > 0.01 ? savings : 0.0,
             price: product.price,
             originalPrice: product.originalPrice,

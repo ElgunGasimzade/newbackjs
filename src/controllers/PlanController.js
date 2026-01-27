@@ -43,7 +43,7 @@ class PlanController {
             const client = await db.getClient();
             const result = await client.query(`
                 SELECT * FROM plans 
-                WHERE user_id = $1 
+                WHERE user_id = $1 AND (is_hidden = FALSE OR is_hidden IS NULL)
                 ORDER BY created_at DESC
             `, [userId]);
 
