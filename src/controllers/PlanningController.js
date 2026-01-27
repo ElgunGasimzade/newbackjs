@@ -319,7 +319,12 @@ class PlanningController {
             // If Option A (Max Savings) involves only 1 store, and that store is the same as Option B (One Stop),
             // then they are identical. Show only one.
             const optionAStores = Object.keys(maxSavingsStops);
-            if (optionAStores.length === 1 && bestStore && optionAStores[0] === bestStore) {
+            const storeA = optionAStores.length === 1 ? optionAStores[0] : null;
+
+            console.log(`[Planning] Dedupe Check: A='${storeA}', B='${bestStore}'`);
+
+            if (storeA && bestStore && storeA.trim().toLowerCase() === bestStore.trim().toLowerCase()) {
+                console.log("[Planning] Deduplicated identical options.");
                 // Remove Option B, keep Option A (it's the same but "Max Savings" implies best price)
                 options.pop();
             }

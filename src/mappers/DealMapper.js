@@ -96,6 +96,23 @@ class DealMapper {
         };
     }
 
+    static mapRowToProductDB(row) {
+        // Maps PostgreSQL row (snake_case) to Product Domain Object (camelCase)
+        return {
+            id: row.id,
+            store: row.store,
+            name: row.name,
+            brand: row.brand,
+            description: row.description,
+            originalPrice: row.original_price ? parseFloat(row.original_price) : 0,
+            price: row.price ? parseFloat(row.price) : 0,
+            discountPercent: parseInt(row.discount_percent, 10) || 0,
+            details: row.details,
+            imageUrl: row.image_url || "https://placehold.co/200x200?text=No+Image",
+            inStock: row.in_stock
+        };
+    }
+
     static mapToBrandItem(product, lang = 'en', userLat = null, userLon = null, storeLocations = {}) {
         const savings = product.originalPrice - product.price;
         const isDeal = savings > 0.01;

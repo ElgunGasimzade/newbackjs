@@ -526,60 +526,57 @@ class DealService {
 
     // Search products by a list of query strings
     // Search products by a list of query strings (e.g. from scanned text)
+    // Search products using SQL for performance (replaces in-memory Fuse)
     async searchProducts(queries = [], options = {}) {
-        let allProducts = await this.getAllProducts();
-
-        // precise location filtering BEFORE search
-        allProducts = this.filterProductsByLocation(allProducts, options);
         if (!queries || queries.length === 0) return [];
 
-        const fuseOptions = {
-            keys: ['name', 'brand', 'description', 'store'],
-            includeScore: true,
-            threshold: 0.1, // Stricter: 0.1 requires ~90% similarity (requested by user)
-            ignoreLocation: true,
-            minMatchCharLength: 3,
-            useExtendedSearch: true
-        };
+        try {
+            // 1. Construct SQL Query with Fuzzy Matching (pg_trgm)
+            // We enabled pg_trgm, so we can use SIMILARITY(col, val) > threshold
 
-        const fuse = new Fuse(allProducts, fuseOptions);
-        let results = new Set();
+            // Filter out short queries
+            const validQueries = queries.filter(q => q.length >= 2);
+            if (validQueries.length === 0) return [];
 
-        for (const query of queries) {
-            let searchResults = [];
-
-            // Special handling for short queries ("un", "su", "et") to avoid "sabun", "sufle", "kotelet"
-            if (query.length <= 3) {
-                // Exact word match using regex for higher precision
-                // or use Fuse extended search with strict equality
-                const strictResults = fuse.search({
-                    $or: [
-                        { name: `'${query}` }, // ' includes exact match logic in Fuse extended search
-                        { description: `'${query}` }
-                    ]
-                });
-
-                // If Fuse extended search isn't strict enough, filter manually with regex word boundaries
-                // This ensures "un" matches "Un 1kq" but NOT "Sabun"
-                const regex = new RegExp(`\\b${query}\\b`, 'i');
-                const manualMatches = allProducts.filter(p =>
-                    regex.test(p.name) ||
-                    regex.test(p.description)
-                ).map(item => ({ item, score: 0 }));
-
-                searchResults = manualMatches.length > 0 ? manualMatches : strictResults;
-            } else {
-                // Normal fuzzy search for longer queries
-                searchResults = fuse.search(query);
-            }
-
-            // Take top 10 matches for each query
-            searchResults.slice(0, 10).forEach(result => {
-                results.add(result.item);
+            const orClauses = validQueries.map((q, i) => {
+                const idx = i + 1;
+                // Check name OR description
+                // SIMILARITY > 0.1 is very loose (good for typos).
+                // ILIKE ensures substring matches are always found even if similarity is low due to short length.
+                return `(
+                    name ILIKE ('%' || $${idx} || '%') OR 
+                    SIMILARITY(name, $${idx}) > 0.9 OR
+                    description ILIKE ('%' || $${idx} || '%')
+                )`;
             });
-        }
 
-        return Array.from(results);
+            const whereClause = orClauses.join(' OR ');
+
+            // Use the first query term as the primary sort score input (approximation)
+            const sql = `
+                SELECT *, 
+                SIMILARITY(name, $1) as score 
+                FROM products 
+                WHERE ${whereClause}
+                ORDER BY score DESC 
+                LIMIT 100
+            `;
+
+            console.log(`[DealService] Fuzzy DB Search (pg_trgm) for terms: ${validQueries.join(', ')}`);
+            const res = await db.query(sql, validQueries);
+
+            let products = res.rows.map(row => DealMapper.mapRowToProductDB(row));
+
+            // 2. Filter by Location
+            products = this.filterProductsByLocation(products, options);
+
+            console.log(`[DealService] Found ${products.length} matches.`);
+            return products;
+
+        } catch (e) {
+            console.error("DB Search failed:", e);
+            return [];
+        }
     }
 
     async getAllProducts() {
