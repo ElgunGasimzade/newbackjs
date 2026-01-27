@@ -75,10 +75,11 @@ class PlanController {
             const client = await db.getClient();
             const result = await client.query(`
                 UPDATE plans 
-                SET status = 'completed', completed_at = NOW() 
+                SET status = 'completed', completed_at = NOW(),
+                    route_details = COALESCE($2, route_details)
                 WHERE id = $1 
                 RETURNING *
-            `, [planId]);
+            `, [planId, req.body.routeDetails || null]);
 
             client.release();
             if (result.rows.length === 0) {
