@@ -52,7 +52,7 @@ class HomeController {
                     name: name, // Specific Name with Unit
                     brand: p.brand,
                     category: p.name, // Generic Category (was productName)
-                    store: p.store,
+                    store: require('../mappers/DealMapper').formatStoreName(p.store), // FORMATTED HERE
                     imageUrl: p.imageUrl, // Use the mapped URL (remote or local)
                     price: p.price,
                     originalPrice: p.originalPrice,
@@ -72,8 +72,15 @@ class HomeController {
 
             if (isFirstPage && homeProducts.length > 0) {
                 // specific user request: "never make products without image deal of day"
-                // Find first product with a valid image (not placeholder)
-                const heroIndex = homeProducts.findIndex(p => p.imageUrl && !p.imageUrl.includes("placehold.co"));
+                // Find first product with a valid image (not placeholder, not "No image", and reasonable length)
+                const heroIndex = homeProducts.findIndex(p => {
+                    if (!p.imageUrl) return false;
+                    const url = p.imageUrl.toLowerCase();
+                    return !url.includes("placehold.co") &&
+                        !url.includes("no image") &&
+                        !url.includes("no_image") &&
+                        url.length > 10;
+                });
 
                 if (heroIndex !== -1) {
                     heroProduct = homeProducts[heroIndex];

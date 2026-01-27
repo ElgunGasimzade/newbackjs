@@ -20,7 +20,11 @@ class SearchController {
             const results = await DealService.searchProducts([query], options);
 
             // Limit to top 10 results for "little non scrollable" UI
-            const topResults = results.slice(0, 10);
+            // Limit to top 10 results for "little non scrollable" UI
+            const topResults = results.slice(0, 10).map(p => ({
+                ...p,
+                store: require('../mappers/DealMapper').formatStoreName(p.store) // FORMATTED
+            }));
 
             res.json({
                 query: query,
