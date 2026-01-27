@@ -216,7 +216,7 @@ class DealService {
                 "lat": 40.39807645,
                 "lon": 49.8686605
             },
-            "Market11": {
+            "Neptun Supermarket Tbilisi Prospekti": {
                 "lat": 40.39673435,
                 "lon": 49.81525671
             },

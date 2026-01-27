@@ -55,61 +55,56 @@ async function initDB() {
 
         console.log(`Parsed ${rawRows.length} rows.`);
 
-        // 3. Map & Insert
-        // Use DealMapper to clean data first
-        // We might want to clear the table first? 
+        // 3. Map & Insert (BATCHED)
         console.log("Clearing existing data...");
         await client.query('TRUNCATE TABLE products');
 
-        console.log("Inserting data...");
-        let count = 0;
-
-        // Prepare statement is faster for bulk
-        // But for simplicity let's just loop or batch
-
+        console.log("Preparing data...");
+        const mappedProducts = [];
         for (const row of rawRows) {
             const product = DealMapper.mapRowToProduct(row);
+            if (product.id) mappedProducts.push(product);
+        }
 
-            // mapRowToProduct returns { id, store, name, brand, ... }
-            if (!product.id) continue;
+        console.log(`Inserting ${mappedProducts.length} products in batches...`);
+
+        const BATCH_SIZE = 1000;
+        for (let i = 0; i < mappedProducts.length; i += BATCH_SIZE) {
+            const batch = mappedProducts.slice(i, i + BATCH_SIZE);
+            const values = [];
+            const placeholders = [];
+
+            batch.forEach((p, idx) => {
+                const offset = idx * 11;
+                placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11})`);
+                values.push(
+                    p.id, p.store, p.name, p.brand, p.description,
+                    p.originalPrice, p.price, p.discountPercent,
+                    p.details, p.imageUrl, p.inStock
+                );
+            });
 
             const query = `
                 INSERT INTO products (
                     id, store, name, brand, description, 
                     original_price, price, discount_percent, 
                     details, image_url, in_stock
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                ) VALUES ${placeholders.join(', ')}
                 ON CONFLICT (id) DO NOTHING
             `;
 
-            const values = [
-                product.id,
-                product.store,
-                product.name,
-                product.brand,
-                product.description,
-                product.originalPrice,
-                product.price,
-                product.discountPercent,
-                product.details,
-                product.imageUrl,
-                product.inStock
-            ];
-
             await client.query(query, values);
-            count++;
-            if (count % 100 === 0) process.stdout.write('.');
+            process.stdout.write('.');
         }
 
         await client.query('COMMIT');
-        console.log(`\nSuccessfully imported ${count} products.`);
+        console.log(`\nSuccessfully imported ${mappedProducts.length} products.`);
     } catch (e) {
         await client.query('ROLLBACK');
         console.error("Failed to init DB:", e);
         process.exit(1);
     } finally {
         client.release();
-        // Close pool to allow script to exit
         db.pool.end();
     }
 }

@@ -294,28 +294,37 @@ class PlanningController {
 
 
             // --- Response ---
-            res.json({
-                options: [
-                    {
-                        id: "opt_max_savings", // ID used to fetch details
-                        type: "MAX_SAVINGS",
-                        title: "Max Savings",
-                        totalSavings: parseFloat(maxSavingsTotalSavings.toFixed(2)),
-                        totalDistance: "",
-                        description: "Save more by visiting multiple stores.",
-                        stops: optionAStopSummaries
-                    },
-                    {
-                        id: "opt_one_stop",
-                        type: "TIME_SAVER",
-                        title: "One Stop",
-                        totalSavings: parseFloat(bestStoreSavings.toFixed(2)),
-                        totalDistance: "",
-                        description: bestStore ? `Get everything at ${bestStore}.` : "No single store has these items.",
-                        stops: optionBStopSummaries
-                    }
-                ]
-            });
+            const options = [
+                {
+                    id: "opt_max_savings", // ID used to fetch details
+                    type: "MAX_SAVINGS",
+                    title: "Max Savings",
+                    totalSavings: parseFloat(maxSavingsTotalSavings.toFixed(2)),
+                    totalDistance: "",
+                    description: "Save more by visiting multiple stores.",
+                    stops: optionAStopSummaries
+                },
+                {
+                    id: "opt_one_stop",
+                    type: "TIME_SAVER",
+                    title: "One Stop",
+                    totalSavings: parseFloat(bestStoreSavings.toFixed(2)),
+                    totalDistance: "",
+                    description: bestStore ? `Get everything at ${bestStore}.` : "No single store has these items.",
+                    stops: optionBStopSummaries
+                }
+            ];
+
+            // Deduplication Logic:
+            // If Option A (Max Savings) involves only 1 store, and that store is the same as Option B (One Stop),
+            // then they are identical. Show only one.
+            const optionAStores = Object.keys(maxSavingsStops);
+            if (optionAStores.length === 1 && bestStore && optionAStores[0] === bestStore) {
+                // Remove Option B, keep Option A (it's the same but "Max Savings" implies best price)
+                options.pop();
+            }
+
+            res.json({ options });
         } catch (e) {
             console.error(e);
             res.status(500).json({ error: "Optimization failed" });
