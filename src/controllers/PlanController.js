@@ -205,19 +205,28 @@ class PlanController {
             } else {
                 // Create new store stop
                 routeDetails.stops.push({
-                    name: store,
-                    address: null, // Would need to look this up from stores table
+                    sequence: routeDetails.stops.length + 1,
+                    store: store,
+                    name: store, // Keep for backward compat if needed? Swift uses 'store'
+                    address: null,
                     lat: null,
                     lon: null,
-                    distance: null,
-                    estTime: null,
+                    distance: "0 km", // Non-optional in Swift
+                    estTime: "5 min",
+                    color: "#4A90E2", // Non-optional in Swift
                     items: [newItem]
                 });
             }
 
-            // Recalculate totals
+            // Recalculate totals & Self-heal existing corrupted stops
             let totalSavings = 0;
             routeDetails.stops.forEach(store => {
+                // Backfill required fields if missing (fixes "Missing data" decoding error)
+                if (!store.distance) store.distance = "0 km";
+                if (!store.color) store.color = "#4A90E2";
+                if (!store.store && store.name) store.store = store.name;
+                if (!store.sequence) store.sequence = routeDetails.stops.indexOf(store) + 1;
+
                 store.items.forEach(item => {
                     totalSavings += item.savings || 0;
                 });
