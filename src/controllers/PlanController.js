@@ -227,7 +227,7 @@ class PlanController {
             // Update plan in database
             await client.query(`
                 UPDATE plans 
-                SET route_details = $1, updated_at = NOW()
+                SET route_details = $1
                 WHERE id = $2
             `, [routeDetails, planId]);
 
