@@ -151,6 +151,95 @@ class PlanController {
             res.status(500).json({ error: "Failed to fetch stats" });
         }
     }
+
+    // POST /api/v1/plans/:planId/items
+    // Body: { productId, name, brand, store, price, originalPrice, imageUrl }
+    async addItemToPlan(req, res) {
+        const { planId } = req.params;
+        const { productId, name, brand, store, price, originalPrice, imageUrl } = req.body;
+
+        if (!productId || !name || !store) {
+            return res.status(400).json({ error: "ProductId, name, and store are required" });
+        }
+
+        try {
+            const client = await db.getClient();
+
+            // Fetch existing plan
+            const planResult = await client.query(`
+                SELECT * FROM plans WHERE id = $1
+            `, [planId]);
+
+            if (planResult.rows.length === 0) {
+                client.release();
+                return res.status(404).json({ error: "Plan not found" });
+            }
+
+            const plan = planResult.rows[0];
+            const routeDetails = plan.route_details;
+
+            // Find or create store in route
+            let storeIndex = routeDetails.stores.findIndex(s => s.name === store);
+
+            const newItem = {
+                id: productId,
+                name,
+                brand: brand || null,
+                price: price || 0,
+                originalPrice: originalPrice || null,
+                imageUrl: imageUrl || null,
+                savings: originalPrice && price ? originalPrice - price : 0,
+                checked: false
+            };
+
+            if (storeIndex >= 0) {
+                // Store exists, add item if not already there
+                const existingItemIndex = routeDetails.stores[storeIndex].items.findIndex(i => i.id === productId);
+                if (existingItemIndex === -1) {
+                    routeDetails.stores[storeIndex].items.push(newItem);
+                }
+            } else {
+                // Create new store stop
+                routeDetails.stores.push({
+                    name: store,
+                    address: null, // Would need to look this up from stores table
+                    lat: null,
+                    lon: null,
+                    distance: null,
+                    estTime: null,
+                    items: [newItem]
+                });
+            }
+
+            // Recalculate totals
+            let totalSavings = 0;
+            routeDetails.stores.forEach(store => {
+                store.items.forEach(item => {
+                    totalSavings += item.savings || 0;
+                });
+            });
+            routeDetails.totalSavings = totalSavings;
+
+            // Update plan in database
+            await client.query(`
+                UPDATE plans 
+                SET route_details = $1, updated_at = NOW()
+                WHERE id = $2
+            `, [routeDetails, planId]);
+
+            client.release();
+
+            res.json({
+                success: true,
+                planId,
+                message: "Item added to plan successfully"
+            });
+
+        } catch (e) {
+            console.error("Add Item to Plan Error:", e);
+            res.status(500).json({ error: "Failed to add item to plan" });
+        }
+    }
 }
 
 module.exports = new PlanController();
