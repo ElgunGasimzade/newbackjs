@@ -189,6 +189,7 @@ class PlanController {
                 id: productId,
                 name,
                 brand: brand || null,
+                aisle: brand || "", // Swift RouteItem expects 'aisle' (String)
                 price: price || 0,
                 originalPrice: originalPrice || null,
                 imageUrl: imageUrl || null,
@@ -228,6 +229,10 @@ class PlanController {
                 if (!store.sequence) store.sequence = routeDetails.stops.indexOf(store) + 1;
 
                 store.items.forEach(item => {
+                    // Backfill item fields
+                    if (item.aisle === undefined || item.aisle === null) {
+                        item.aisle = item.brand || "";
+                    }
                     totalSavings += item.savings || 0;
                 });
             });
