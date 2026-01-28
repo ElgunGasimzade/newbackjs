@@ -102,7 +102,7 @@ class PlanController {
             // Soft Delete: Just hide it
             const result = await client.query(`
                 UPDATE plans
-                SET is_hidden = TRUE
+                SET is_hidden = TRUE, status = 'deleted'
                 WHERE id = $1 
                 RETURNING id
             `, [planId]);
