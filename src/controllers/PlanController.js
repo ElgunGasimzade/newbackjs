@@ -179,7 +179,11 @@ class PlanController {
             const routeDetails = plan.route_details;
 
             // Find or create store in route
-            let storeIndex = routeDetails.stores.findIndex(s => s.name === store);
+            // Frontend uses 'stops', verify current structure
+            const stops = routeDetails.stops || routeDetails.stores || [];
+            if (!routeDetails.stops) routeDetails.stops = stops; // Normalize to stops
+
+            let storeIndex = routeDetails.stops.findIndex(s => s.name === store);
 
             const newItem = {
                 id: productId,
@@ -194,13 +198,13 @@ class PlanController {
 
             if (storeIndex >= 0) {
                 // Store exists, add item if not already there
-                const existingItemIndex = routeDetails.stores[storeIndex].items.findIndex(i => i.id === productId);
+                const existingItemIndex = routeDetails.stops[storeIndex].items.findIndex(i => i.id === productId);
                 if (existingItemIndex === -1) {
-                    routeDetails.stores[storeIndex].items.push(newItem);
+                    routeDetails.stops[storeIndex].items.push(newItem);
                 }
             } else {
                 // Create new store stop
-                routeDetails.stores.push({
+                routeDetails.stops.push({
                     name: store,
                     address: null, // Would need to look this up from stores table
                     lat: null,
@@ -213,7 +217,7 @@ class PlanController {
 
             // Recalculate totals
             let totalSavings = 0;
-            routeDetails.stores.forEach(store => {
+            routeDetails.stops.forEach(store => {
                 store.items.forEach(item => {
                     totalSavings += item.savings || 0;
                 });
