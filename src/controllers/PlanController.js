@@ -165,85 +165,95 @@ class PlanController {
         try {
             const client = await db.getClient();
 
-            // Fetch existing plan
-            const planResult = await client.query(`
-                SELECT * FROM plans WHERE id = $1
-            `, [planId]);
+            try {
+                await client.query('BEGIN');
 
-            if (planResult.rows.length === 0) {
-                client.release();
-                return res.status(404).json({ error: "Plan not found" });
-            }
+                // Fetch existing plan with row locking to prevent race conditions
+                const planResult = await client.query(`
+                    SELECT * FROM plans WHERE id = $1 FOR UPDATE
+                `, [planId]);
 
-            const plan = planResult.rows[0];
-            const routeDetails = plan.route_details;
-
-            // Find or create store in route
-            // Frontend uses 'stops', verify current structure
-            const stops = routeDetails.stops || routeDetails.stores || [];
-            if (!routeDetails.stops) routeDetails.stops = stops; // Normalize to stops
-
-            let storeIndex = routeDetails.stops.findIndex(s => s.name === store);
-
-            const newItem = {
-                id: productId,
-                name,
-                brand: brand || null,
-                aisle: brand || "", // Swift RouteItem expects 'aisle' (String)
-                price: price || 0,
-                originalPrice: originalPrice || null,
-                imageUrl: imageUrl || null,
-                savings: originalPrice && price ? originalPrice - price : 0,
-                checked: false
-            };
-
-            if (storeIndex >= 0) {
-                // Store exists, add item if not already there
-                const existingItemIndex = routeDetails.stops[storeIndex].items.findIndex(i => i.id === productId);
-                if (existingItemIndex === -1) {
-                    routeDetails.stops[storeIndex].items.push(newItem);
+                if (planResult.rows.length === 0) {
+                    await client.query('ROLLBACK');
+                    client.release();
+                    return res.status(404).json({ error: "Plan not found" });
                 }
-            } else {
-                // Create new store stop
-                routeDetails.stops.push({
-                    sequence: routeDetails.stops.length + 1,
-                    store: store,
-                    name: store, // Keep for backward compat if needed? Swift uses 'store'
-                    address: null,
-                    lat: null,
-                    lon: null,
-                    distance: "0 km", // Non-optional in Swift
-                    estTime: "5 min",
-                    color: "#4A90E2", // Non-optional in Swift
-                    items: [newItem]
-                });
-            }
 
-            // Recalculate totals & Self-heal existing corrupted stops
-            let totalSavings = 0;
-            routeDetails.stops.forEach(store => {
-                // Backfill required fields if missing (fixes "Missing data" decoding error)
-                if (!store.distance) store.distance = "0 km";
-                if (!store.color) store.color = "#4A90E2";
-                if (!store.store && store.name) store.store = store.name;
-                if (!store.sequence) store.sequence = routeDetails.stops.indexOf(store) + 1;
+                const plan = planResult.rows[0];
+                const routeDetails = plan.route_details;
 
-                store.items.forEach(item => {
-                    // Backfill item fields
-                    if (item.aisle === undefined || item.aisle === null) {
-                        item.aisle = item.brand || "";
+                // Find or create store in route
+                // Frontend uses 'stops', verify current structure
+                const stops = routeDetails.stops || routeDetails.stores || [];
+                if (!routeDetails.stops) routeDetails.stops = stops; // Normalize to stops
+
+                let storeIndex = routeDetails.stops.findIndex(s => s.name === store);
+
+                const newItem = {
+                    id: productId,
+                    name,
+                    brand: brand || null,
+                    aisle: brand || "", // Swift RouteItem expects 'aisle' (String)
+                    price: price || 0,
+                    originalPrice: originalPrice || null,
+                    imageUrl: imageUrl || null,
+                    savings: originalPrice && price ? originalPrice - price : 0,
+                    checked: false
+                };
+
+                if (storeIndex >= 0) {
+                    // Store exists, add item if not already there
+                    const existingItemIndex = routeDetails.stops[storeIndex].items.findIndex(i => i.id === productId);
+                    if (existingItemIndex === -1) {
+                        routeDetails.stops[storeIndex].items.push(newItem);
                     }
-                    totalSavings += item.savings || 0;
-                });
-            });
-            routeDetails.totalSavings = totalSavings;
+                } else {
+                    // Create new store stop
+                    routeDetails.stops.push({
+                        sequence: routeDetails.stops.length + 1,
+                        store: store,
+                        name: store,
+                        address: null,
+                        lat: null,
+                        lon: null,
+                        distance: "0 km",
+                        estTime: "5 min",
+                        color: "#4A90E2",
+                        items: [newItem]
+                    });
+                }
 
-            // Update plan in database
-            await client.query(`
-                UPDATE plans 
-                SET route_details = $1
-                WHERE id = $2
-            `, [routeDetails, planId]);
+                // Recalculate totals & Self-heal existing corrupted stops
+                let totalSavings = 0;
+                routeDetails.stops.forEach(store => {
+                    // Backfill required fields if missing
+                    if (!store.distance) store.distance = "0 km";
+                    if (!store.color) store.color = "#4A90E2";
+                    if (!store.store && store.name) store.store = store.name;
+                    if (!store.sequence) store.sequence = routeDetails.stops.indexOf(store) + 1;
+
+                    store.items.forEach(item => {
+                        // Backfill item fields
+                        if (item.aisle === undefined || item.aisle === null) {
+                            item.aisle = item.brand || "";
+                        }
+                        totalSavings += item.savings || 0;
+                    });
+                });
+                routeDetails.totalSavings = totalSavings;
+
+                // Update plan in database
+                await client.query(`
+                    UPDATE plans 
+                    SET route_details = $1
+                    WHERE id = $2
+                `, [routeDetails, planId]);
+
+                await client.query('COMMIT');
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            }
 
             client.release();
 
